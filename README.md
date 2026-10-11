@@ -192,6 +192,30 @@ GET /
 }
 ```
 
+## Piano Frequencies
+
+### GET `/api/frequencies`
+
+Returns the note frequencies shown on the piano: from `C1` through `C7`, including sharp notes. Each value is in Hz and rounded to one decimal place. The response contains only these notes.
+
+**Request:**
+
+```http
+GET /api/frequencies
+```
+
+**Example response:**
+
+```json
+{
+  "C1": 32.7,
+  "C#1": 34.6,
+  "D1": 36.7,
+  "D#1": 38.9,
+  "E1": 41.2
+}
+```
+
 ---
 
 # 10. Development Workflow
