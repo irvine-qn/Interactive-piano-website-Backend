@@ -216,6 +216,34 @@ GET /api/frequencies
 }
 ```
 
+## Virtual Piano Configuration
+
+### GET `/api/piano`
+
+Returns the note range, keyboard mapping, note frequencies, and metronome BPM limits used by the Home virtual piano.
+
+**Response:**
+
+```json
+{
+  "minBpm": 30,
+  "maxBpm": 240,
+  "defaultBpm": 120,
+  "minMidiNote": 24,
+  "maxMidiNote": 96,
+  "notes": [
+    {
+      "midi": 24,
+      "name": "C1",
+      "frequency": 32.7,
+      "keyboardKey": "1"
+    }
+  ]
+}
+```
+
+Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/frequencies` response remains unchanged.
+
 ---
 
 # 10. Development Workflow
