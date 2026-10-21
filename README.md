@@ -22,15 +22,31 @@ This project is built with **Node.js + Express.js**.
 ```text
 piano-backend/
 │
+├── public/
 ├── src/
-│   ├── controllers/
+│   ├── config/
+│   │   └── env.js
 │   │
-│   ├── middleware/
+│   ├── common/
+│   │   ├── constants/
+│   │   │   └── piano.constants.js
+│   │   ├── exceptions/
+│   │   ├── middlewares/
+│   │   └── utils/
 │   │
-│   ├── models/
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── users/
+│   │   ├── sheets/
+│   │   ├── collections/
+│   │   └── workspace/
+│   │       ├── workspace.controller.js
+│   │       ├── workspace.service.js
+│   │       └── workspace.routes.js
 │   │
-│   ├── routes/
-│   │
+│   ├── lib/
+│   ├── types/
+│   ├── app.js
 │   └── server.js
 │
 ├── .env
@@ -42,17 +58,25 @@ piano-backend/
 
 ### Folder Description
 
-| Folder/File         | Description                          |
-| ------------------- | ------------------------------------ |
-| `src/server.js`     | Main entry point of the backend      |
-| `src/routes/`       | Define API endpoints                 |
-| `src/controllers/`  | Handle API logic                     |
-| `src/models/`       | Database models                      |
-| `src/middleware/`   | Authentication and other middleware  |
-| `.env`              | Environment variables                |
-| `.gitignore`        | Files ignored by Git                 |
-| `package.json`      | Project information and dependencies |
-| `package-lock.json` | Locks dependency versions            |
+| Folder/File                  | Description                                                        |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `src/server.js`              | Main entry point, starts the server                                |
+| `src/app.js`                 | Creates the Express app, registers middleware and routes           |
+| `src/config/`                | System configuration (environment variables, database, CORS)       |
+| `src/common/constants/`      | Shared constants (piano note range, BPM limits, keyboard mapping)  |
+| `src/common/exceptions/`     | Custom error classes                                               |
+| `src/common/middlewares/`    | Shared middleware (authentication, rate limit, error handler)      |
+| `src/common/utils/`          | Shared helper functions                                            |
+| `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
+| `src/features/workspace/`    | Virtual piano configuration (`/api/piano`, `/api/frequencies`)     |
+| `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
+| `src/types/`                 | Shared type definitions                                            |
+| `.env`                       | Environment variables                                              |
+| `.gitignore`                 | Files ignored by Git                                               |
+| `package.json`               | Project information and dependencies                               |
+| `package-lock.json`          | Locks dependency versions                                          |
+
+> Folders without files (for example `features/auth/`, `lib/`) are not tracked by Git until a file is added to them.
 
 ---
 
@@ -371,9 +395,9 @@ DELETE /api/sheets/:id
 
 Before modifying an existing API:
 
-1. Check the current route.
-2. Check the controller.
-3. Check the model.
+1. Check the current route in `src/features/<feature>/<feature>.routes.js`.
+2. Check the controller in `src/features/<feature>/<feature>.controller.js`.
+3. Check the service and model in the same feature folder.
 4. Make sure your changes do not break existing APIs.
 5. Test the API before creating a Pull Request.
 
