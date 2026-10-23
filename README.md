@@ -29,6 +29,7 @@ piano-backend/
 │   │
 │   ├── common/
 │   │   ├── constants/
+│   │   │   ├── piano.constants.js
 │   │   │   └── sheet.constants.js
 │   │   ├── exceptions/
 │   │   ├── middlewares/
@@ -38,6 +39,10 @@ piano-backend/
 │   │   ├── auth/
 │   │   ├── users/
 │   │   ├── collections/
+│   │   ├── workspace/
+│   │   │   ├── workspace.controller.js
+│   │   │   ├── workspace.service.js
+│   │   │   └── workspace.routes.js
 │   │   └── sheets/
 │   │       ├── sheets.catalog.js
 │   │       ├── sheets.schema.js
@@ -67,11 +72,12 @@ piano-backend/
 | `src/server.js`              | Main entry point, starts the server                                |
 | `src/app.js`                 | Creates the Express app, registers middleware and routes           |
 | `src/config/`                | System configuration (environment variables, database, CORS)       |
-| `src/common/constants/`      | Shared constants (note names, sheet difficulties, pagination)      |
+| `src/common/constants/`      | Shared constants (piano note range, BPM limits, keyboard mapping, sheet difficulties, pagination) |
 | `src/common/exceptions/`     | Custom error classes                                               |
 | `src/common/middlewares/`    | Shared middleware (authentication, rate limit, error handler)      |
 | `src/common/utils/`          | Shared helper functions                                            |
 | `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
+| `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/piano`, `/api/frequencies`) |
 | `src/features/sheets/`       | Sheet data for the Workspace page (`/api/sheets`)                  |
 | `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
@@ -220,6 +226,58 @@ GET /
   "message": "Piano Backend is running!"
 }
 ```
+
+## Piano Frequencies
+
+### GET `/api/frequencies`
+
+Returns the note frequencies shown on the piano: from `C1` through `C7`, including sharp notes. Each value is in Hz and rounded to one decimal place. The response contains only these notes.
+
+**Request:**
+
+```http
+GET /api/frequencies
+```
+
+**Example response:**
+
+```json
+{
+  "C1": 32.7,
+  "C#1": 34.6,
+  "D1": 36.7,
+  "D#1": 38.9,
+  "E1": 41.2
+}
+```
+
+## Virtual Piano Configuration
+
+### GET `/api/piano`
+
+Returns the note range, keyboard mapping, note frequencies, and metronome BPM limits used by the Home virtual piano.
+
+**Response:**
+
+```json
+{
+  "minBpm": 30,
+  "maxBpm": 240,
+  "defaultBpm": 120,
+  "minMidiNote": 24,
+  "maxMidiNote": 96,
+  "notes": [
+    {
+      "midi": 24,
+      "name": "C1",
+      "frequency": 32.7,
+      "keyboardKey": "1"
+    }
+  ]
+}
+```
+
+Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/frequencies` response remains unchanged.
 
 ## Sheets (Workspace page)
 

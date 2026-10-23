@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const workspaceRoutes = require("./features/workspace/workspace.routes");
 const sheetsRoutes = require("./features/sheets/sheets.routes");
 const { notFoundHandler, errorHandler } = require("./common/middlewares/error.middleware");
 
@@ -14,6 +15,7 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/api", workspaceRoutes);
 app.use("/api", sheetsRoutes);
 
 app.use(notFoundHandler);
