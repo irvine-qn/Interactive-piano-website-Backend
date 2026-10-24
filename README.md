@@ -29,7 +29,8 @@ piano-backend/
 │   │
 │   ├── common/
 │   │   ├── constants/
-│   │   │   └── piano.constants.js
+│   │   │   ├── piano.constants.js
+│   │   │   └── sheet.constants.js
 │   │   ├── exceptions/
 │   │   ├── middlewares/
 │   │   └── utils/
@@ -37,12 +38,20 @@ piano-backend/
 │   ├── features/
 │   │   ├── auth/
 │   │   ├── users/
-│   │   ├── sheets/
 │   │   ├── collections/
-│   │   └── workspace/
-│   │       ├── workspace.controller.js
-│   │       ├── workspace.service.js
-│   │       └── workspace.routes.js
+│   │   ├── workspace/
+│   │   │   ├── workspace.controller.js
+│   │   │   ├── workspace.service.js
+│   │   │   └── workspace.routes.js
+│   │   └── sheets/
+│   │       ├── sheets.catalog.js
+│   │       ├── sheets.schema.js
+│   │       ├── sheets.controller.js
+│   │       ├── sheets.service.js
+│   │       └── sheets.routes.js
+│   │
+│   ├── data/
+│   │   └── sheets/
 │   │
 │   ├── lib/
 │   ├── types/
@@ -63,12 +72,14 @@ piano-backend/
 | `src/server.js`              | Main entry point, starts the server                                |
 | `src/app.js`                 | Creates the Express app, registers middleware and routes           |
 | `src/config/`                | System configuration (environment variables, database, CORS)       |
-| `src/common/constants/`      | Shared constants (piano note range, BPM limits, keyboard mapping)  |
+| `src/common/constants/`      | Shared constants (piano note range, BPM limits, keyboard mapping, sheet difficulties, pagination) |
 | `src/common/exceptions/`     | Custom error classes                                               |
 | `src/common/middlewares/`    | Shared middleware (authentication, rate limit, error handler)      |
 | `src/common/utils/`          | Shared helper functions                                            |
 | `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
-| `src/features/workspace/`    | Virtual piano configuration (`/api/piano`, `/api/frequencies`)     |
+| `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/piano`, `/api/frequencies`) |
+| `src/features/sheets/`       | Sheet data for the Workspace page (`/api/sheets`)                  |
+| `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/types/`                 | Shared type definitions                                            |
 | `.env`                       | Environment variables                                              |
@@ -267,6 +278,42 @@ Returns the note range, keyboard mapping, note frequencies, and metronome BPM li
 ```
 
 Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/frequencies` response remains unchanged.
+
+## Sheets (Workspace page)
+
+Feature: `src/features/sheets/`. Sheet data currently comes from JSON files in `src/data/sheets/` (no database yet; swap `sheets.catalog.js` for a repository later).
+
+### GET `/api/sheets`
+
+List sheets. Query: `q` (title/composer), `difficulty` (`EASY|MEDIUM|HARD|EXPERT`), `sort` (`newest|title`), `page` (default 1), `pageSize` (default 8, max 50).
+
+```json
+{
+  "data": [
+    {
+      "id": "merry-christmas-mr-lawrence",
+      "title": "Merry Christmas Mr. Lawrence",
+      "composer": "Ryuichi Sakamoto",
+      "difficulty": "MEDIUM",
+      "tags": ["Movie", "Classical"],
+      "bpm": 96,
+      "timeSignature": [4, 4],
+      "durationSec": 215,
+      "noteCount": 1775,
+      "createdAt": "2026-10-23T00:00:00.000Z"
+    }
+  ],
+  "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
+}
+```
+
+### GET `/api/sheets/:id`
+
+Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
+
+### Errors
+
+All errors use `{ "error": { "code", "message", "details?" } }`: `422 VALIDATION_FAILED`, `404 SHEET_NOT_FOUND`, `404 NOT_FOUND`, `500 INTERNAL_ERROR`.
 
 ---
 
