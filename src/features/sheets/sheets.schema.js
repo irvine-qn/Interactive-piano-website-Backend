@@ -13,6 +13,9 @@ const toPositiveInt = (value, fallback, field) => {
 const parseListQuery = (query) => {
   const { q, difficulty, sort } = query;
 
+  if (q !== undefined && typeof q !== "string") {
+    throw new ApiError(422, "VALIDATION_FAILED", "q must be a string");
+  }
   if (difficulty !== undefined && !DIFFICULTIES.includes(difficulty)) {
     throw new ApiError(422, "VALIDATION_FAILED", `difficulty must be one of: ${DIFFICULTIES.join(", ")}`);
   }
