@@ -22,15 +22,40 @@ This project is built with **Node.js + Express.js**.
 ```text
 piano-backend/
 │
+├── public/
 ├── src/
-│   ├── controllers/
+│   ├── config/
+│   │   └── env.js
 │   │
-│   ├── middleware/
+│   ├── common/
+│   │   ├── constants/
+│   │   │   ├── piano.constants.js
+│   │   │   └── sheet.constants.js
+│   │   ├── exceptions/
+│   │   ├── middlewares/
+│   │   └── utils/
 │   │
-│   ├── models/
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── users/
+│   │   ├── collections/
+│   │   ├── workspace/
+│   │   │   ├── workspace.controller.js
+│   │   │   ├── workspace.service.js
+│   │   │   └── workspace.routes.js
+│   │   └── sheets/
+│   │       ├── sheets.catalog.js
+│   │       ├── sheets.schema.js
+│   │       ├── sheets.controller.js
+│   │       ├── sheets.service.js
+│   │       └── sheets.routes.js
 │   │
-│   ├── routes/
+│   ├── data/
+│   │   └── sheets/
 │   │
+│   ├── lib/
+│   ├── types/
+│   ├── app.js
 │   └── server.js
 │
 ├── .env
@@ -42,17 +67,27 @@ piano-backend/
 
 ### Folder Description
 
-| Folder/File         | Description                          |
-| ------------------- | ------------------------------------ |
-| `src/server.js`     | Main entry point of the backend      |
-| `src/routes/`       | Define API endpoints                 |
-| `src/controllers/`  | Handle API logic                     |
-| `src/models/`       | Database models                      |
-| `src/middleware/`   | Authentication and other middleware  |
-| `.env`              | Environment variables                |
-| `.gitignore`        | Files ignored by Git                 |
-| `package.json`      | Project information and dependencies |
-| `package-lock.json` | Locks dependency versions            |
+| Folder/File                  | Description                                                        |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `src/server.js`              | Main entry point, starts the server                                |
+| `src/app.js`                 | Creates the Express app, registers middleware and routes           |
+| `src/config/`                | System configuration (environment variables, database, CORS)       |
+| `src/common/constants/`      | Shared constants (piano note range, BPM limits, keyboard mapping, sheet difficulties, pagination) |
+| `src/common/exceptions/`     | Custom error classes                                               |
+| `src/common/middlewares/`    | Shared middleware (authentication, rate limit, error handler)      |
+| `src/common/utils/`          | Shared helper functions                                            |
+| `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
+| `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/piano`, `/api/frequencies`) |
+| `src/features/sheets/`       | Sheet data for the Workspace page (`/api/sheets`)                  |
+| `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
+| `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
+| `src/types/`                 | Shared type definitions                                            |
+| `.env`                       | Environment variables                                              |
+| `.gitignore`                 | Files ignored by Git                                               |
+| `package.json`               | Project information and dependencies                               |
+| `package-lock.json`          | Locks dependency versions                                          |
+
+> Folders without files (for example `features/auth/`, `lib/`) are not tracked by Git until a file is added to them.
 
 ---
 
@@ -192,6 +227,94 @@ GET /
 }
 ```
 
+## Piano Frequencies
+
+### GET `/api/frequencies`
+
+Returns the note frequencies shown on the piano: from `C1` through `C7`, including sharp notes. Each value is in Hz and rounded to one decimal place. The response contains only these notes.
+
+**Request:**
+
+```http
+GET /api/frequencies
+```
+
+**Example response:**
+
+```json
+{
+  "C1": 32.7,
+  "C#1": 34.6,
+  "D1": 36.7,
+  "D#1": 38.9,
+  "E1": 41.2
+}
+```
+
+## Virtual Piano Configuration
+
+### GET `/api/piano`
+
+Returns the note range, keyboard mapping, note frequencies, and metronome BPM limits used by the Home virtual piano.
+
+**Response:**
+
+```json
+{
+  "minBpm": 30,
+  "maxBpm": 240,
+  "defaultBpm": 120,
+  "minMidiNote": 24,
+  "maxMidiNote": 96,
+  "notes": [
+    {
+      "midi": 24,
+      "name": "C1",
+      "frequency": 32.7,
+      "keyboardKey": "1"
+    }
+  ]
+}
+```
+
+Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/frequencies` response remains unchanged.
+
+## Sheets (Workspace page)
+
+Feature: `src/features/sheets/`. Sheet data currently comes from JSON files in `src/data/sheets/` (no database yet; swap `sheets.catalog.js` for a repository later).
+
+### GET `/api/sheets`
+
+List sheets. Query: `q` (title/composer), `difficulty` (`EASY|MEDIUM|HARD|EXPERT`), `sort` (`newest|title`), `page` (default 1), `pageSize` (default 8, max 50).
+
+```json
+{
+  "data": [
+    {
+      "id": "merry-christmas-mr-lawrence",
+      "title": "Merry Christmas Mr. Lawrence",
+      "composer": "Ryuichi Sakamoto",
+      "difficulty": "MEDIUM",
+      "tags": ["Movie", "Classical"],
+      "bpm": 96,
+      "timeSignature": [4, 4],
+      "durationSec": 215,
+      "noteCount": 1775,
+      "createdAt": "2026-10-23T00:00:00.000Z"
+    }
+  ],
+  "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
+}
+```
+
+### GET `/api/sheets/:id`
+
+Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
+
+### Errors
+
+All errors use `{ "error": { "code", "message", "details?" } }`: `422 VALIDATION_FAILED`, `404 SHEET_NOT_FOUND`, `404 NOT_FOUND`, `500 INTERNAL_ERROR`.
+
 ---
 
 # 10. Development Workflow
@@ -319,9 +442,9 @@ DELETE /api/sheets/:id
 
 Before modifying an existing API:
 
-1. Check the current route.
-2. Check the controller.
-3. Check the model.
+1. Check the current route in `src/features/<feature>/<feature>.routes.js`.
+2. Check the controller in `src/features/<feature>/<feature>.controller.js`.
+3. Check the service and model in the same feature folder.
 4. Make sure your changes do not break existing APIs.
 5. Test the API before creating a Pull Request.
 

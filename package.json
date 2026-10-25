@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/irvine-qn/Interactive-piano-website-Backend#readme",
   "dependencies": {
+    "@tonejs/midi": "^2.0.28",
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
     "express": "^5.2.1"
