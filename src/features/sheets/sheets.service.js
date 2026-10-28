@@ -14,14 +14,20 @@ const listSheets = async (query) => {
   };
 };
 
+const sheetNotFound = (id) => new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}" not found`);
+
 const getSheetById = async (id) => {
   const sheet = await sheetsRepository.findById(id);
-  if (!sheet) {
-    throw new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}" not found`);
-  }
+  if (!sheet) throw sheetNotFound(id);
   return sheet;
 };
 
 const listTags = async () => ({ data: await sheetsRepository.countTags() });
 
-module.exports = { listSheets, getSheetById, listTags };
+const recordView = async (id) => {
+  const result = await sheetsRepository.incrementViews(id);
+  if (!result) throw sheetNotFound(id);
+  return result;
+};
+
+module.exports = { listSheets, getSheetById, listTags, recordView };

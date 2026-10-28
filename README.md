@@ -419,6 +419,16 @@ All tags with the number of sheets using each one, most used first (then A→Z).
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
+### POST `/api/v1/sheets/:id/view`
+
+Add one view to a sheet (no auth, no request body). The increment is atomic, so concurrent requests are all counted. Returns the new total:
+
+```json
+{ "views": 45201 }
+```
+
+Returns `404 SHEET_NOT_FOUND` if the sheet does not exist. The Workspace page calls this once when a sheet is opened.
+
 ### Errors
 
 All errors use `{ "error": { "code", "message", "details?" } }`: `422 VALIDATION_FAILED`, `404 SHEET_NOT_FOUND`, `404 NOT_FOUND`, `500 INTERNAL_ERROR`.

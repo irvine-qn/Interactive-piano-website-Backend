@@ -67,4 +67,19 @@ const countTags = () =>
     ORDER BY count DESC, name ASC
   `;
 
-module.exports = { findMany, findById, countTags };
+// Tăng views ngay trong câu UPDATE (atomic, nhiều request cùng lúc không bị mất lượt).
+// Trả null nếu không có bài (Prisma báo lỗi P2025 khi không tìm thấy bản ghi để update).
+const incrementViews = async (id) => {
+  try {
+    return await prisma.sheet.update({
+      where: { id },
+      data: { views: { increment: 1 } },
+      select: { views: true },
+    });
+  } catch (error) {
+    if (error.code === "P2025") return null;
+    throw error;
+  }
+};
+
+module.exports = { findMany, findById, countTags, incrementViews };

@@ -14,4 +14,8 @@ const getTags = async (req, res) => {
   res.json(await sheetsService.listTags());
 };
 
-module.exports = { getSheets, getSheet, getTags };
+const postView = async (req, res) => {
+  res.json(await sheetsService.recordView(req.params.id));
+};
+
+module.exports = { getSheets, getSheet, getTags, postView };
