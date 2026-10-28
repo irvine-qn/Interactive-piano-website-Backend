@@ -77,8 +77,8 @@ piano-backend/
 | `src/common/middlewares/`    | Shared middleware (authentication, rate limit, error handler)      |
 | `src/common/utils/`          | Shared helper functions                                            |
 | `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
-| `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/piano`, `/api/frequencies`) |
-| `src/features/sheets/`       | Sheet data for the Workspace page (`/api/sheets`)                  |
+| `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/v1/piano`, `/api/v1/frequencies`) |
+| `src/features/sheets/`       | Sheet data for the Workspace page (`/api/v1/sheets`)                  |
 | `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/types/`                 | Shared type definitions                                            |
@@ -229,14 +229,14 @@ GET /
 
 ## Piano Frequencies
 
-### GET `/api/frequencies`
+### GET `/api/v1/frequencies`
 
 Returns the note frequencies shown on the piano: from `C1` through `C7`, including sharp notes. Each value is in Hz and rounded to one decimal place. The response contains only these notes.
 
 **Request:**
 
 ```http
-GET /api/frequencies
+GET /api/v1/frequencies
 ```
 
 **Example response:**
@@ -253,7 +253,7 @@ GET /api/frequencies
 
 ## Virtual Piano Configuration
 
-### GET `/api/piano`
+### GET `/api/v1/piano`
 
 Returns the note range, keyboard mapping, note frequencies, and metronome BPM limits used by the Home virtual piano.
 
@@ -277,13 +277,13 @@ Returns the note range, keyboard mapping, note frequencies, and metronome BPM li
 }
 ```
 
-Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/frequencies` response remains unchanged.
+Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/v1/frequencies` response remains unchanged.
 
 ## Sheets (Workspace page)
 
 Feature: `src/features/sheets/`. Sheet data currently comes from JSON files in `src/data/sheets/` (no database yet; swap `sheets.catalog.js` for a repository later).
 
-### GET `/api/sheets`
+### GET `/api/v1/sheets`
 
 List sheets. Query: `q` (title/composer), `difficulty` (`EASY|MEDIUM|HARD|EXPERT`), `sort` (`newest|title`), `page` (default 1), `pageSize` (default 8, max 50).
 
@@ -307,7 +307,7 @@ List sheets. Query: `q` (title/composer), `difficulty` (`EASY|MEDIUM|HARD|EXPERT
 }
 ```
 
-### GET `/api/sheets/:id`
+### GET `/api/v1/sheets/:id`
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
@@ -413,27 +413,27 @@ MongoDB
 API endpoints should follow this structure:
 
 ```text
-/api/<resource>
+/api/v1/<resource>
 ```
 
 Examples:
 
 ```text
-/api/auth
-/api/users
-/api/sheets
+/api/v1/auth
+/api/v1/users
+/api/v1/sheets
 ```
 
 Example endpoints:
 
 ```text
-POST   /api/auth/register
-POST   /api/auth/login
+POST   /api/v1/auth/register
+POST   /api/v1/auth/login
 
-GET    /api/sheets
-POST   /api/sheets
-GET    /api/sheets/:id
-DELETE /api/sheets/:id
+GET    /api/v1/sheets
+POST   /api/v1/sheets
+GET    /api/v1/sheets/:id
+DELETE /api/v1/sheets/:id
 ```
 
 ---

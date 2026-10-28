@@ -15,8 +15,8 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/api", workspaceRoutes);
-app.use("/api", sheetsRoutes);
+app.use("/api/v1", workspaceRoutes);
+app.use("/api/v1", sheetsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
