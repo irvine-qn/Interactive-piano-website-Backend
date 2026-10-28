@@ -243,7 +243,7 @@ const prisma = require("../../lib/prisma");
 
 # 7. Run the Backend
 
-Start the development server:
+Make sure PostgreSQL is running and the database is migrated and seeded (sections 6.1 and 6.2). Then start the development server:
 
 ```bash
 npm start
@@ -365,7 +365,7 @@ List sheets (without `notes`).
 
 | Query | Values | Default |
 | --- | --- | --- |
-| `q` | Search in title and composer (case-insensitive) | – |
+| `q` | Search in title and composer (case-insensitive, `%` and `_` are matched literally) | – |
 | `difficulty` | `EASY` \| `MEDIUM` \| `HARD` \| `EXPERT` | – |
 | `tag` | Exact tag name, case-sensitive (e.g. `Pop`, `Contemporary Classical`) | – |
 | `sort` | `popular` (most views) \| `likes` (most likes) \| `newest` \| `title` (A→Z) | `popular` |
@@ -431,7 +431,15 @@ Returns `404 SHEET_NOT_FOUND` if the sheet does not exist. The Workspace page ca
 
 ### Errors
 
-All errors use `{ "error": { "code", "message", "details?" } }`: `422 VALIDATION_FAILED`, `404 SHEET_NOT_FOUND`, `404 NOT_FOUND`, `500 INTERNAL_ERROR`.
+All errors use `{ "error": { "code", "message", "details?" } }`:
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `INVALID_JSON` | Request body is not valid JSON |
+| 404 | `SHEET_NOT_FOUND` | Sheet id does not exist |
+| 404 | `NOT_FOUND` | Route does not exist (also wrong HTTP method) |
+| 422 | `VALIDATION_FAILED` | Invalid query parameter |
+| 500 | `INTERNAL_ERROR` | Unexpected server error (e.g. database is down) |
 
 ---
 
@@ -484,6 +492,11 @@ The following files should be committed:
 package.json
 package-lock.json
 src/
+scripts/
+prisma/              (schema, migrations, seed)
+prisma.config.js
+docker-compose.yml
+.env.example
 README.md
 .gitignore
 ```
@@ -500,12 +513,13 @@ README.md
 * [x] Basic API endpoint
 * [x] PostgreSQL via Docker (local dev)
 * [x] Prisma ORM connection
+* [x] Music sheet database (`sheets` table + sample seed)
+* [x] Sheet Library API (list, search/filter/sort, tags, detail, view count)
 * [ ] User model
 * [ ] Register API
 * [ ] Login API
 * [ ] JWT authentication
 * [ ] Music sheet upload
-* [ ] Music sheet database
 * [ ] User's saved music sheets
 
 ### Frontend
@@ -583,4 +597,14 @@ Start server:
 
 ```bash
 npm start
+```
+
+Database and data:
+
+```bash
+docker compose up -d        # start PostgreSQL
+npm run db:migrate          # apply migrations (+ regenerate Prisma Client)
+npm run db:seed             # load sample sheets
+npm run db:studio           # browse data in the browser
+npm run sheets:build        # regenerate sheet JSON from MIDI (src/data/sheets/catalog.json)
 ```

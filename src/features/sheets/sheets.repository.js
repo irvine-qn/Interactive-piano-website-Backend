@@ -26,11 +26,14 @@ const ORDER_BY = {
   title: { title: "asc" },
 };
 
+// Prisma đưa `contains` vào ILIKE mà không escape, nên "%" và "_" sẽ thành ký tự đại diện
+const escapeLike = (value) => value.replace(/[\\%_]/g, "\\$&");
+
 const buildWhere = ({ q, difficulty, tag }) => ({
   ...(q && {
     OR: [
-      { title: { contains: q, mode: "insensitive" } },
-      { composer: { contains: q, mode: "insensitive" } },
+      { title: { contains: escapeLike(q), mode: "insensitive" } },
+      { composer: { contains: escapeLike(q), mode: "insensitive" } },
     ],
   }),
   ...(difficulty && { difficulty }),
