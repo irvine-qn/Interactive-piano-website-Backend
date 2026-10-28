@@ -210,17 +210,28 @@ The `fiano-postgres` container should show `healthy`. Data is kept in the Docker
 
 `npm install` runs `prisma generate` automatically (`postinstall`), so the Prisma Client is ready after installing.
 
-After the database is running, apply all migrations:
+After the database is running, apply all migrations and load the sample sheets:
 
 ```bash
 npm run db:migrate
+npm run db:seed
 ```
 
 | Command | Purpose |
 | --- | --- |
 | `npm run db:migrate` | Apply migrations, then regenerate the Prisma Client automatically (`postdb:migrate`). After editing `schema.prisma`, create a new one with `npm run db:migrate -- --name <change_name>` |
+| `npm run db:seed` | Load the sheets listed in `src/data/sheets/catalog.json` into the database. Safe to run again: existing sheets are updated, `views`/`likes` are kept |
 | `npm run db:generate` | Regenerate the Prisma Client after pulling schema changes |
 | `npm run db:studio` | Open Prisma Studio in the browser to view/edit data |
+
+> `npx prisma migrate reset` drops all data and re-applies migrations, but **Prisma 7 does not run the seed automatically** (older versions did). Run `npm run db:seed` again afterwards.
+
+### Adding a new sample sheet
+
+1. Put the `.mid` file in `src/data/sheets/midi/`.
+2. Check its tracks: `node scripts/midi-to-sheet.mjs src/data/sheets/midi/<file>.mid --inspect`.
+3. Add an entry to `src/data/sheets/catalog.json` (with the piano `tracks` to use).
+4. Run `npm run sheets:build`, then `npm run db:seed`.
 
 Use the shared client in code:
 

@@ -6,6 +6,7 @@ module.exports = defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "node prisma/seed.js",
   },
   datasource: {
     // Dùng process.env (không dùng env()) để `prisma generate` lúc npm install vẫn chạy khi chưa có .env
