@@ -12,7 +12,7 @@ This project is built with **Node.js + Express.js**.
 * Express.js
 * CORS
 * dotenv
-* MongoDB *(planned)*
+* PostgreSQL 16 (Docker for local development)
 * JWT Authentication *(planned)*
 
 ---
@@ -59,7 +59,9 @@ piano-backend/
 │   └── server.js
 │
 ├── .env
+├── .env.example
 ├── .gitignore
+├── docker-compose.yml
 ├── package-lock.json
 ├── package.json
 └── README.md
@@ -82,7 +84,9 @@ piano-backend/
 | `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/types/`                 | Shared type definitions                                            |
-| `.env`                       | Environment variables                                              |
+| `.env`                       | Environment variables (local only, not committed)                  |
+| `.env.example`               | Template for `.env`                                                |
+| `docker-compose.yml`         | Local PostgreSQL container                                         |
 | `.gitignore`                 | Files ignored by Git                                               |
 | `package.json`               | Project information and dependencies                               |
 | `package-lock.json`          | Locks dependency versions                                          |
@@ -98,6 +102,7 @@ Before running the project, make sure you have:
 * Node.js
 * npm
 * Git
+* Docker Desktop (runs the local PostgreSQL database)
 
 Check your versions:
 
@@ -105,6 +110,7 @@ Check your versions:
 node -v
 npm -v
 git --version
+docker compose version
 ```
 
 ---
@@ -145,23 +151,49 @@ You do **not** need to clone or manually create `node_modules`.
 
 # 6. Environment Variables
 
-Create a `.env` file in the root directory:
+Copy `.env.example` to `.env` in the root directory:
 
-```text
-piano-backend/
-├── src/
-├── .env
-├── package.json
-└── README.md
+```bash
+cp .env.example .env
 ```
-
-For the current development version:
 
 ```env
 PORT=5000
+
+POSTGRES_USER=fiano
+POSTGRES_PASSWORD=fiano
+POSTGRES_DB=fiano
+POSTGRES_PORT=5432
+
+DATABASE_URL=postgresql://fiano:fiano@localhost:5432/fiano?schema=public
 ```
 
 > Do not commit `.env` to GitHub because it may contain sensitive information.
+
+If port `5432` is already used by another PostgreSQL on your machine, change `POSTGRES_PORT` and the port inside `DATABASE_URL` to the same free port (for example `5433`).
+
+## 6.1 Start the Database
+
+Open Docker Desktop, then run from the backend directory:
+
+```bash
+docker compose up -d
+```
+
+Check that the container is healthy:
+
+```bash
+docker compose ps
+```
+
+The `fiano-postgres` container should show `healthy`. Data is kept in the Docker volume `fiano-pgdata`.
+
+| Command | Purpose |
+| --- | --- |
+| `docker compose up -d` | Start PostgreSQL in the background |
+| `docker compose stop` | Stop it (data is kept) |
+| `docker compose down` | Remove the container (data is kept in the volume) |
+| `docker compose down -v` | Remove the container **and delete all data** |
 
 ---
 
@@ -380,7 +412,8 @@ README.md
 * [x] CORS setup
 * [x] Environment variables
 * [x] Basic API endpoint
-* [ ] MongoDB connection
+* [x] PostgreSQL via Docker (local dev)
+* [ ] Prisma ORM connection
 * [ ] User model
 * [ ] Register API
 * [ ] Login API
@@ -403,7 +436,7 @@ React Frontend
 Express Backend
       │
       ↓
-MongoDB
+PostgreSQL
 ```
 
 ---
