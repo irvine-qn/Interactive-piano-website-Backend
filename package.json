@@ -8,6 +8,7 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "postdb:migrate": "prisma generate",
     "db:studio": "prisma studio",
     "sheets:build": "node scripts/build-sheets.mjs"
   },

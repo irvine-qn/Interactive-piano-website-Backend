@@ -218,7 +218,7 @@ npm run db:migrate
 
 | Command | Purpose |
 | --- | --- |
-| `npm run db:migrate` | Apply migrations; after editing `schema.prisma`, create a new one with `npm run db:migrate -- --name <change_name>` |
+| `npm run db:migrate` | Apply migrations, then regenerate the Prisma Client automatically (`postdb:migrate`). After editing `schema.prisma`, create a new one with `npm run db:migrate -- --name <change_name>` |
 | `npm run db:generate` | Regenerate the Prisma Client after pulling schema changes |
 | `npm run db:studio` | Open Prisma Studio in the browser to view/edit data |
 

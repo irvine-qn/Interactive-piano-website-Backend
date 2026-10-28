@@ -9,3 +9,36 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// ===== Feature: Sheet Library =====
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+model Sheet {
+  id            String     @id // slug, ví dụ "canon-in-d"
+  title         String
+  subtitle      String?
+  composer      String
+  difficulty    Difficulty
+  tags          String[]
+  bpm           Int
+  timeSignature Int[]      @map("time_signature") // [tử số, mẫu số], ví dụ [3, 4]
+  keySignature  String?    @map("key_signature") // ví dụ "D major"
+  durationSec   Int        @map("duration_sec")
+  noteCount     Int        @map("note_count")
+  views         Int        @default(0)
+  likes         Int        @default(0)
+  coverColor    String     @default("yellow") @map("cover_color") // yellow | pink | mint | lavender
+  // Mảng nốt [{ midi, name, time, duration, velocity, hand }]. Chỉ lấy khi xem chi tiết, không lấy ở danh sách.
+  notes         Json
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  // uploaderId sẽ thêm bằng migration riêng khi có bảng users (Feature Auth/User)
+
+  @@map("sheets")
+}
