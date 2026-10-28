@@ -1,25 +1,32 @@
 const prisma = require("../../lib/prisma");
 
-// Các cột trả về ở danh sách: không lấy `notes` (nặng) và các cột chưa có trong contract
+// Các cột trả về ở danh sách: không lấy `notes` (nặng)
 const SUMMARY_SELECT = {
   id: true,
   title: true,
+  subtitle: true,
   composer: true,
   difficulty: true,
   tags: true,
   bpm: true,
   timeSignature: true,
+  keySignature: true,
   durationSec: true,
   noteCount: true,
+  views: true,
+  likes: true,
+  coverColor: true,
   createdAt: true,
 };
 
 const ORDER_BY = {
+  popular: { views: "desc" },
+  likes: { likes: "desc" },
   newest: { createdAt: "desc" },
   title: { title: "asc" },
 };
 
-const buildWhere = ({ q, difficulty }) => ({
+const buildWhere = ({ q, difficulty, tag }) => ({
   ...(q && {
     OR: [
       { title: { contains: q, mode: "insensitive" } },
@@ -27,10 +34,11 @@ const buildWhere = ({ q, difficulty }) => ({
     ],
   }),
   ...(difficulty && { difficulty }),
+  ...(tag && { tags: { has: tag } }),
 });
 
-const findMany = async ({ q, difficulty, sort, page, pageSize }) => {
-  const where = buildWhere({ q, difficulty });
+const findMany = async ({ q, difficulty, tag, sort, page, pageSize }) => {
+  const where = buildWhere({ q, difficulty, tag });
   const [items, total] = await prisma.$transaction([
     prisma.sheet.findMany({
       where,

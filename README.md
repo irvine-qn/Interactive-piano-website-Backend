@@ -355,33 +355,51 @@ Returns the note range, keyboard mapping, note frequencies, and metronome BPM li
 
 Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/v1/frequencies` response remains unchanged.
 
-## Sheets (Workspace page)
+## Sheets (Sheet Library & Workspace pages)
 
 Feature: `src/features/sheets/` (routes → controller → service → repository). Sheet data is read from the PostgreSQL table `sheets` through Prisma (`sheets.repository.js`). Run `npm run db:seed` first to load the sample sheets.
 
 ### GET `/api/v1/sheets`
 
-List sheets. Query: `q` (title/composer), `difficulty` (`EASY|MEDIUM|HARD|EXPERT`), `sort` (`newest|title`), `page` (default 1), `pageSize` (default 8, max 50).
+List sheets (without `notes`).
+
+| Query | Values | Default |
+| --- | --- | --- |
+| `q` | Search in title and composer (case-insensitive) | – |
+| `difficulty` | `EASY` \| `MEDIUM` \| `HARD` \| `EXPERT` | – |
+| `tag` | Exact tag name, case-sensitive (e.g. `Pop`, `Contemporary Classical`) | – |
+| `sort` | `popular` (most views) \| `likes` (most likes) \| `newest` \| `title` (A→Z) | `popular` |
+| `page` | Positive integer | `1` |
+| `pageSize` | Positive integer, max 50 | `8` |
+
+Filters can be combined, e.g. `/api/v1/sheets?tag=Classical&difficulty=EASY&sort=likes`.
 
 ```json
 {
   "data": [
     {
-      "id": "merry-christmas-mr-lawrence",
-      "title": "Merry Christmas Mr. Lawrence",
-      "composer": "Ryuichi Sakamoto",
-      "difficulty": "MEDIUM",
-      "tags": ["Movie", "Classical"],
-      "bpm": 96,
-      "timeSignature": [4, 4],
-      "durationSec": 215,
-      "noteCount": 1775,
-      "createdAt": "2026-10-23T00:00:00.000Z"
+      "id": "fur-elise",
+      "title": "Für Elise",
+      "subtitle": null,
+      "composer": "Ludwig van Beethoven",
+      "difficulty": "EASY",
+      "tags": ["Classical"],
+      "bpm": 120,
+      "timeSignature": [3, 4],
+      "keySignature": "C major",
+      "durationSec": 33,
+      "noteCount": 104,
+      "views": 152300,
+      "likes": 34100,
+      "coverColor": "yellow",
+      "createdAt": "2026-10-28T01:00:00.000Z"
     }
   ],
-  "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
+  "meta": { "page": 1, "pageSize": 8, "total": 9, "totalPages": 2 }
 }
 ```
+
+`subtitle` and `keySignature` can be `null`. `coverColor` is one of `yellow`, `pink`, `mint`, `lavender`.
 
 ### GET `/api/v1/sheets/:id`
 
