@@ -1,0 +1,11 @@
+// Schema database của Fiano. Mỗi feature thêm model của mình kèm một migration riêng.
+// Sau khi sửa file này: npm run db:migrate -- --name <ten_thay_doi>
+
+generator client {
+  // Sinh client JavaScript vào node_modules/@prisma/client (dự án dùng JS CommonJS, không dùng TypeScript)
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

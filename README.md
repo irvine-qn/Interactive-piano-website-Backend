@@ -13,6 +13,7 @@ This project is built with **Node.js + Express.js**.
 * CORS
 * dotenv
 * PostgreSQL 16 (Docker for local development)
+* Prisma ORM 7 (`prisma-client-js` + `@prisma/adapter-pg`)
 * JWT Authentication *(planned)*
 
 ---
@@ -54,14 +55,20 @@ piano-backend/
 │   │   └── sheets/
 │   │
 │   ├── lib/
+│   │   └── prisma.js
 │   ├── types/
 │   ├── app.js
 │   └── server.js
+│
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
 │
 ├── .env
 ├── .env.example
 ├── .gitignore
 ├── docker-compose.yml
+├── prisma.config.js
 ├── package-lock.json
 ├── package.json
 └── README.md
@@ -83,6 +90,10 @@ piano-backend/
 | `src/features/sheets/`       | Sheet data for the Workspace page (`/api/v1/sheets`)                  |
 | `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
+| `src/lib/prisma.js`          | Shared Prisma client (connects through the `pg` driver adapter)    |
+| `prisma/schema.prisma`       | Database models                                                    |
+| `prisma/migrations/`         | Migration history (one migration per schema change)                |
+| `prisma.config.js`           | Prisma CLI config (schema path, migrations path, `DATABASE_URL`)   |
 | `src/types/`                 | Shared type definitions                                            |
 | `.env`                       | Environment variables (local only, not committed)                  |
 | `.env.example`               | Template for `.env`                                                |
@@ -194,6 +205,28 @@ The `fiano-postgres` container should show `healthy`. Data is kept in the Docker
 | `docker compose stop` | Stop it (data is kept) |
 | `docker compose down` | Remove the container (data is kept in the volume) |
 | `docker compose down -v` | Remove the container **and delete all data** |
+
+## 6.2 Prisma
+
+`npm install` runs `prisma generate` automatically (`postinstall`), so the Prisma Client is ready after installing.
+
+After the database is running, apply all migrations:
+
+```bash
+npm run db:migrate
+```
+
+| Command | Purpose |
+| --- | --- |
+| `npm run db:migrate` | Apply migrations; after editing `schema.prisma`, create a new one with `npm run db:migrate -- --name <change_name>` |
+| `npm run db:generate` | Regenerate the Prisma Client after pulling schema changes |
+| `npm run db:studio` | Open Prisma Studio in the browser to view/edit data |
+
+Use the shared client in code:
+
+```js
+const prisma = require("../../lib/prisma");
+```
 
 ---
 
@@ -413,7 +446,7 @@ README.md
 * [x] Environment variables
 * [x] Basic API endpoint
 * [x] PostgreSQL via Docker (local dev)
-* [ ] Prisma ORM connection
+* [x] Prisma ORM connection
 * [ ] User model
 * [ ] Register API
 * [ ] Login API
