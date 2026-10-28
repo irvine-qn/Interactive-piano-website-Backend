@@ -10,4 +10,8 @@ const getSheet = async (req, res) => {
   res.json(await sheetsService.getSheetById(req.params.id));
 };
 
-module.exports = { getSheets, getSheet };
+const getTags = async (req, res) => {
+  res.json(await sheetsService.listTags());
+};
+
+module.exports = { getSheets, getSheet, getTags };

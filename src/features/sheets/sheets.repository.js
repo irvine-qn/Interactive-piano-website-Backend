@@ -58,4 +58,13 @@ const findById = (id) =>
     select: { ...SUMMARY_SELECT, notes: true },
   });
 
-module.exports = { findMany, findById };
+// Prisma không group được theo phần tử của mảng nên dùng SQL: tách mảng tags thành từng dòng rồi đếm
+const countTags = () =>
+  prisma.$queryRaw`
+    SELECT tag AS name, COUNT(*)::int AS count
+    FROM sheets, unnest(tags) AS tag
+    GROUP BY tag
+    ORDER BY count DESC, name ASC
+  `;
+
+module.exports = { findMany, findById, countTags };

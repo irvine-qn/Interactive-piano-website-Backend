@@ -22,4 +22,6 @@ const getSheetById = async (id) => {
   return sheet;
 };
 
-module.exports = { listSheets, getSheetById };
+const listTags = async () => ({ data: await sheetsRepository.countTags() });
+
+module.exports = { listSheets, getSheetById, listTags };

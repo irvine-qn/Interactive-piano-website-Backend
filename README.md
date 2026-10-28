@@ -401,6 +401,20 @@ Filters can be combined, e.g. `/api/v1/sheets?tag=Classical&difficulty=EASY&sort
 
 `subtitle` and `keySignature` can be `null`. `coverColor` is one of `yellow`, `pink`, `mint`, `lavender`.
 
+### GET `/api/v1/sheets/tags`
+
+All tags with the number of sheets using each one, most used first (then A→Z). Use `name` as the `tag` query of `GET /api/v1/sheets`.
+
+```json
+{
+  "data": [
+    { "name": "Contemporary Classical", "count": 3 },
+    { "name": "Classical", "count": 2 },
+    { "name": "Pop", "count": 2 }
+  ]
+}
+```
+
 ### GET `/api/v1/sheets/:id`
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
