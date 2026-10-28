@@ -45,7 +45,7 @@ piano-backend/
 │   │   │   ├── workspace.service.js
 │   │   │   └── workspace.routes.js
 │   │   └── sheets/
-│   │       ├── sheets.catalog.js
+│   │       ├── sheets.repository.js
 │   │       ├── sheets.schema.js
 │   │       ├── sheets.controller.js
 │   │       ├── sheets.service.js
@@ -88,7 +88,7 @@ piano-backend/
 | `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
 | `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/v1/piano`, `/api/v1/frequencies`) |
 | `src/features/sheets/`       | Sheet data for the Workspace page (`/api/v1/sheets`)                  |
-| `src/data/sheets/`           | Sheet note data (JSON) until a database is added                   |
+| `src/data/sheets/`           | Sample sheet source data (MIDI, catalog, note JSON) loaded by `npm run db:seed` |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/lib/prisma.js`          | Shared Prisma client (connects through the `pg` driver adapter)    |
 | `prisma/schema.prisma`       | Database models                                                    |
@@ -357,7 +357,7 @@ Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existi
 
 ## Sheets (Workspace page)
 
-Feature: `src/features/sheets/`. Sheet data currently comes from JSON files in `src/data/sheets/` (no database yet; swap `sheets.catalog.js` for a repository later).
+Feature: `src/features/sheets/` (routes → controller → service → repository). Sheet data is read from the PostgreSQL table `sheets` through Prisma (`sheets.repository.js`). Run `npm run db:seed` first to load the sample sheets.
 
 ### GET `/api/v1/sheets`
 
