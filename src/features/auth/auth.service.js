@@ -22,7 +22,7 @@ const signAccessToken = (user) =>
     { expiresIn: JWT_EXPIRES_IN },
   );
 
-const register = async ({ username, email, password }) => {
+const register = async ({ displayName, username, email, password }) => {
   const existing = await usersRepository.findByUsernameOrEmail(username, email);
   if (existing.some((u) => u.username === username)) {
     throw new ApiError(409, "USERNAME_TAKEN", "Username already exists");
@@ -33,6 +33,7 @@ const register = async ({ username, email, password }) => {
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
   const user = await usersRepository.createUser({
+    displayName,
     username,
     email,
     passwordHash,

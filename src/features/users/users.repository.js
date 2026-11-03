@@ -30,10 +30,10 @@ const findByIdentifier = async (identifier) => {
   return rows[0] || null;
 };
 
-const createUser = async ({ username, email, passwordHash }) => {
+const createUser = async ({ displayName, username, email, passwordHash }) => {
   const { rows } = await pool.query(
-    "INSERT INTO users (username, email, password_hash, display_name) VALUES ($1, $2, $3, $1) RETURNING *",
-    [username, email, passwordHash],
+    "INSERT INTO users (username, email, password_hash, display_name) VALUES ($1, $2, $3, $4) RETURNING *",
+    [username, email, passwordHash, displayName],
   );
   return rows[0];
 };

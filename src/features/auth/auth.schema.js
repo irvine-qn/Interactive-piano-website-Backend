@@ -13,10 +13,14 @@ const requireString = (value, field) => {
 };
 
 const parseRegisterBody = (body = {}) => {
+  const displayName = requireString(body.displayName, "displayName");
   const username = requireString(body.username, "username");
   const email = requireString(body.email, "email").toLowerCase();
   const password = requireString(body.password, "password");
 
+  if (displayName.length > 100) {
+    throw new ApiError(422, "VALIDATION_FAILED", "displayName must be at most 100 characters");
+  }
   if (!USERNAME_REGEX.test(username)) {
     throw new ApiError(
       422,
@@ -35,7 +39,7 @@ const parseRegisterBody = (body = {}) => {
     );
   }
 
-  return { username, email, password };
+  return { displayName, username, email, password };
 };
 
 const parseLoginBody = (body = {}) => ({
