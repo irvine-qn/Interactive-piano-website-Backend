@@ -3,6 +3,9 @@ const {
   USERNAME_REGEX,
   EMAIL_REGEX,
   PASSWORD_REGEX,
+  USERNAME_MAX_LENGTH,
+  EMAIL_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
 } = require("../../common/constants/auth.constants");
 
 const requireString = (value, field) => {
@@ -18,8 +21,26 @@ const parseRegisterBody = (body = {}) => {
   const email = requireString(body.email, "email").toLowerCase();
   const password = requireString(body.password, "password");
 
-  if (displayName.length > 100) {
-    throw new ApiError(422, "VALIDATION_FAILED", "displayName must be at most 100 characters");
+  if (displayName.length > DISPLAY_NAME_MAX_LENGTH) {
+    throw new ApiError(
+      422,
+      "VALIDATION_FAILED",
+      `displayName must be at most ${DISPLAY_NAME_MAX_LENGTH} characters`,
+    );
+  }
+  if (username.length > USERNAME_MAX_LENGTH) {
+    throw new ApiError(
+      422,
+      "VALIDATION_FAILED",
+      `username must be at most ${USERNAME_MAX_LENGTH} characters`,
+    );
+  }
+  if (email.length > EMAIL_MAX_LENGTH) {
+    throw new ApiError(
+      422,
+      "VALIDATION_FAILED",
+      `email must be at most ${EMAIL_MAX_LENGTH} characters`,
+    );
   }
   if (!USERNAME_REGEX.test(username)) {
     throw new ApiError(

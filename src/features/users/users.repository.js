@@ -1,13 +1,18 @@
 const pool = require("../../config/database");
+const {
+  USERNAME_MAX_LENGTH,
+  EMAIL_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
+} = require("../../common/constants/auth.constants");
 
 const createUsersTable = () =>
   pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
-      username VARCHAR(50) UNIQUE NOT NULL,
-      email VARCHAR(255) UNIQUE NOT NULL,
+      username VARCHAR(${USERNAME_MAX_LENGTH}) UNIQUE NOT NULL,
+      email VARCHAR(${EMAIL_MAX_LENGTH}) UNIQUE NOT NULL,
       password_hash VARCHAR(255) NOT NULL,
-      display_name VARCHAR(100),
+      display_name VARCHAR(${DISPLAY_NAME_MAX_LENGTH}),
       role VARCHAR(20) NOT NULL DEFAULT 'user',
       is_verified BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
