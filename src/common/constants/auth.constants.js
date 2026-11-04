@@ -1,0 +1,17 @@
+const USERNAME_REGEX = /^[a-z0-9]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
+const BCRYPT_SALT_ROUNDS = 10;
+const USERNAME_MAX_LENGTH = 50;
+const EMAIL_MAX_LENGTH = 255;
+const DISPLAY_NAME_MAX_LENGTH = 100;
+
+module.exports = {
+  USERNAME_REGEX,
+  EMAIL_REGEX,
+  PASSWORD_REGEX,
+  BCRYPT_SALT_ROUNDS,
+  USERNAME_MAX_LENGTH,
+  EMAIL_MAX_LENGTH,
+  DISPLAY_NAME_MAX_LENGTH,
+};

@@ -177,9 +177,12 @@ POSTGRES_DB=fiano
 POSTGRES_PORT=5432
 
 DATABASE_URL=postgresql://fiano:fiano@localhost:5432/fiano?schema=public
+
+JWT_SECRET=change-me-to-a-long-random-string
+JWT_EXPIRES_IN=7d
 ```
 
-> Do not commit `.env` to GitHub because it may contain sensitive information.
+> Do not commit `.env` to GitHub because it may contain sensitive information. Set `JWT_SECRET` to your own long random string (it signs login tokens).
 
 If port `5432` is already used by another PostgreSQL on your machine, change `POSTGRES_PORT` and the port inside `DATABASE_URL` to the same free port (for example `5433`).
 
