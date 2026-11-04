@@ -1,50 +1,41 @@
-const pool = require("../../config/database");
-const {
-  USERNAME_MAX_LENGTH,
-  EMAIL_MAX_LENGTH,
-  DISPLAY_NAME_MAX_LENGTH,
-} = require("../../common/constants/auth.constants");
+const prisma = require("../../lib/prisma");
 
-const createUsersTable = () =>
-  pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username VARCHAR(${USERNAME_MAX_LENGTH}) UNIQUE NOT NULL,
-      email VARCHAR(${EMAIL_MAX_LENGTH}) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
-      display_name VARCHAR(${DISPLAY_NAME_MAX_LENGTH}),
-      role VARCHAR(20) NOT NULL DEFAULT 'user',
-      is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
+// Bảng users do migration Prisma quản lý (prisma/migrations/*_add_users).
+// Giữ dạng row snake_case như khi còn dùng pg (SELECT *) để auth.service.js không phải đổi.
+const toRow = (user) =>
+  user && {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    password_hash: user.passwordHash,
+    display_name: user.displayName,
+    role: user.role,
+    is_verified: user.isVerified,
+    created_at: user.createdAt,
+  };
 
 const findByUsernameOrEmail = async (username, email) => {
-  const { rows } = await pool.query(
-    "SELECT * FROM users WHERE username = $1 OR email = $2",
-    [username, email],
-  );
-  return rows;
+  const users = await prisma.user.findMany({
+    where: { OR: [{ username }, { email }] },
+  });
+  return users.map(toRow);
 };
 
 const findByIdentifier = async (identifier) => {
-  const { rows } = await pool.query(
-    "SELECT * FROM users WHERE username = $1 OR email = $1 LIMIT 1",
-    [identifier],
-  );
-  return rows[0] || null;
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ username: identifier }, { email: identifier }] },
+  });
+  return toRow(user) || null;
 };
 
 const createUser = async ({ displayName, username, email, passwordHash }) => {
-  const { rows } = await pool.query(
-    "INSERT INTO users (username, email, password_hash, display_name) VALUES ($1, $2, $3, $4) RETURNING *",
-    [username, email, passwordHash, displayName],
-  );
-  return rows[0];
+  const user = await prisma.user.create({
+    data: { username, email, passwordHash, displayName },
+  });
+  return toRow(user);
 };
 
 module.exports = {
-  createUsersTable,
   findByUsernameOrEmail,
   findByIdentifier,
   createUser,
