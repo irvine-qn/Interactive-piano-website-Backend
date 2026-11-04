@@ -14,7 +14,7 @@ This project is built with **Node.js + Express.js**.
 * dotenv
 * PostgreSQL 16 (Docker for local development)
 * Prisma ORM 7 (`prisma-client-js` + `@prisma/adapter-pg`)
-* JWT Authentication *(planned)*
+* JWT authentication (`jsonwebtoken`) + password hashing (`bcryptjs`)
 
 ---
 
@@ -30,6 +30,7 @@ piano-backend/
 │   │
 │   ├── common/
 │   │   ├── constants/
+│   │   │   ├── auth.constants.js
 │   │   │   ├── piano.constants.js
 │   │   │   └── sheet.constants.js
 │   │   ├── exceptions/
@@ -38,7 +39,12 @@ piano-backend/
 │   │
 │   ├── features/
 │   │   ├── auth/
+│   │   │   ├── auth.controller.js
+│   │   │   ├── auth.routes.js
+│   │   │   ├── auth.schema.js
+│   │   │   └── auth.service.js
 │   │   ├── users/
+│   │   │   └── users.repository.js
 │   │   ├── collections/
 │   │   ├── workspace/
 │   │   │   ├── workspace.controller.js
@@ -62,7 +68,13 @@ piano-backend/
 │
 ├── prisma/
 │   ├── schema.prisma
+│   ├── seed.js
 │   └── migrations/
+│
+├── scripts/
+│   ├── midi-to-sheet.mjs       # MIDI -> sheet JSON (seed data)
+│   ├── build-sheets.mjs        # npm run sheets:build
+│   └── auth-regression.mjs     # Auth API regression test (record/compare)
 │
 ├── .env
 ├── .env.example
@@ -87,7 +99,9 @@ piano-backend/
 | `src/common/utils/`          | Shared helper functions                                            |
 | `src/features/<feature>/`    | One folder per feature: routes, controller, service, model         |
 | `src/features/workspace/`    | Virtual piano configuration for the Home page (`/api/v1/piano`, `/api/v1/frequencies`) |
-| `src/features/sheets/`       | Sheet data for the Workspace page (`/api/v1/sheets`)                  |
+| `src/features/sheets/`       | Sheet data for the Library and Workspace pages (`/api/v1/sheets`)  |
+| `src/features/auth/`         | Register / login, password hashing, JWT (`/api/v1/auth`)           |
+| `src/features/users/`        | `users` table access through Prisma (`users.repository.js`)        |
 | `src/data/sheets/`           | Sample sheet source data (MIDI, catalog, note JSON) loaded by `npm run db:seed` |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/lib/prisma.js`          | Shared Prisma client (connects through the `pg` driver adapter)    |
@@ -102,7 +116,7 @@ piano-backend/
 | `package.json`               | Project information and dependencies                               |
 | `package-lock.json`          | Locks dependency versions                                          |
 
-> Folders without files (for example `features/auth/`, `lib/`) are not tracked by Git until a file is added to them.
+> Folders without files (for example `features/collections/`, `types/`) are not tracked by Git until a file is added to them.
 
 ---
 
@@ -223,6 +237,7 @@ npm run db:seed
 | Command | Purpose |
 | --- | --- |
 | `npm run db:migrate` | Apply migrations, then regenerate the Prisma Client automatically (`postdb:migrate`). After editing `schema.prisma`, create a new one with `npm run db:migrate -- --name <change_name>` |
+| `npm run db:deploy` | Apply pending migrations **without** drift checks (and regenerate the client). Use it once on an existing database, see 6.3 |
 | `npm run db:seed` | Load the sheets listed in `src/data/sheets/catalog.json` into the database. Safe to run again: existing sheets are updated, `views`/`likes` are kept |
 | `npm run db:generate` | Regenerate the Prisma Client after pulling schema changes |
 | `npm run db:studio` | Open Prisma Studio in the browser to view/edit data |
@@ -241,6 +256,22 @@ Use the shared client in code:
 ```js
 const prisma = require("../../lib/prisma");
 ```
+
+All tables (`sheets`, `users`, …) are created **only by Prisma migrations**. Do not create tables with SQL at server startup.
+
+## 6.3 Updating an Existing Database After Pulling
+
+The `users` table used to be created by the server at startup (raw SQL). It is now owned by the migration `20261104095754_add_users`. If your local database was created before that change, `npm run db:migrate` reports **"Drift detected … We need to reset the public schema … All data will be lost"**.
+
+> ⚠️ **Never answer `y` to that prompt.** Pick the case that matches your database instead (all keep your data):
+
+| Your local database | Commands (run once) |
+| --- | --- |
+| New / empty | `npm run db:migrate` then `npm run db:seed` |
+| Has `sheets` (Prisma) **and** `users` (created by the old server) | `npm run db:deploy` |
+| Has only `users` (never ran Prisma) | `npx prisma migrate resolve --applied 20261104095754_add_users`, then `npm run db:deploy`, then `npm run db:seed` |
+
+Check with `npx prisma migrate status` → `Database schema is up to date!`. After that, `npm run db:migrate` works normally again.
 
 ---
 
@@ -432,6 +463,67 @@ Add one view to a sheet (no auth, no request body). The increment is atomic, so 
 
 Returns `404 SHEET_NOT_FOUND` if the sheet does not exist. The Workspace page calls this once when a sheet is opened.
 
+## Auth
+
+Feature: `src/features/auth/` (routes → controller → schema → service) and `src/features/users/users.repository.js` (Prisma, table `users`). Passwords are hashed with bcrypt (10 rounds); responses never contain the hash. Tokens are JWT signed with `JWT_SECRET`, valid for `JWT_EXPIRES_IN` (default `7d`), payload `{ sub: userId, username, role }`.
+
+Send the token on protected requests:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+### POST `/api/v1/auth/register`
+
+```json
+{ "displayName": "Minh Quan", "username": "quanpianist", "email": "quan@example.com", "password": "Password1" }
+```
+
+| Field | Rules |
+| --- | --- |
+| `displayName` | Required, max 100 characters (trimmed) |
+| `username` | Required, lowercase letters and digits only, max 50 |
+| `email` | Required, valid email, max 255, stored in lowercase |
+| `password` | At least 8 characters, 1 uppercase letter and 1 digit |
+
+Response `201`:
+
+```json
+{
+  "accessToken": "<jwt>",
+  "user": {
+    "id": 1,
+    "username": "quanpianist",
+    "email": "quan@example.com",
+    "displayName": "Minh Quan",
+    "role": "user",
+    "isVerified": false,
+    "createdAt": "2026-11-04T09:33:41.615Z"
+  }
+}
+```
+
+Errors: `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED` (message says which field).
+
+### POST `/api/v1/auth/login`
+
+```json
+{ "identifier": "quanpianist", "password": "Password1" }
+```
+
+`identifier` is the username **or** the email (case-insensitive). Response `200` has the same shape as register. Wrong username/email or password: `401 INVALID_CREDENTIALS` (same message for both, so the API does not reveal which accounts exist).
+
+### Regression test
+
+After changing Auth code, compare responses with a baseline taken before the change (creates a few test accounts in the current database, dev only):
+
+```bash
+node scripts/auth-regression.mjs --record  baseline.json   # before the change
+node scripts/auth-regression.mjs --compare baseline.json   # after the change
+```
+
+Options: `--base http://localhost:5000`, `--existing <username>:<password>` (also check an account that already exists).
+
 ### Errors
 
 All errors use `{ "error": { "code", "message", "details?" } }`:
@@ -439,9 +531,11 @@ All errors use `{ "error": { "code", "message", "details?" } }`:
 | Status | Code | When |
 | --- | --- | --- |
 | 400 | `INVALID_JSON` | Request body is not valid JSON |
+| 401 | `INVALID_CREDENTIALS` | Login with a wrong username/email or password |
 | 404 | `SHEET_NOT_FOUND` | Sheet id does not exist |
 | 404 | `NOT_FOUND` | Route does not exist (also wrong HTTP method) |
-| 422 | `VALIDATION_FAILED` | Invalid query parameter |
+| 409 | `USERNAME_TAKEN` / `EMAIL_TAKEN` | Register with an existing username / email |
+| 422 | `VALIDATION_FAILED` | Invalid query parameter or request body |
 | 500 | `INTERNAL_ERROR` | Unexpected server error (e.g. database is down) |
 
 ---
@@ -518,10 +612,10 @@ README.md
 * [x] Prisma ORM connection
 * [x] Music sheet database (`sheets` table + sample seed)
 * [x] Sheet Library API (list, search/filter/sort, tags, detail, view count)
-* [ ] User model
-* [ ] Register API
-* [ ] Login API
-* [ ] JWT authentication
+* [x] User model (Prisma, migration `add_users`)
+* [x] Register API
+* [x] Login API
+* [x] JWT authentication (token issued on register/login)
 * [ ] Music sheet upload
 * [ ] User's saved music sheets
 
@@ -607,6 +701,7 @@ Database and data:
 ```bash
 docker compose up -d        # start PostgreSQL
 npm run db:migrate          # apply migrations (+ regenerate Prisma Client)
+npm run db:deploy           # apply migrations without drift checks (existing DB, see 6.3)
 npm run db:seed             # load sample sheets
 npm run db:studio           # browse data in the browser
 npm run sheets:build        # regenerate sheet JSON from MIDI (src/data/sheets/catalog.json)
