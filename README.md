@@ -76,6 +76,10 @@ piano-backend/
 │   ├── build-sheets.mjs        # npm run sheets:build
 │   └── auth-regression.mjs     # Auth API regression test (record/compare)
 │
+├── docs/
+│   ├── NOTES.md                # Technical notes for the team
+│   └── CHANGELOG.md            # Dated log of important changes
+│
 ├── .env
 ├── .env.example
 ├── .gitignore
@@ -679,6 +683,8 @@ Before modifying an existing API:
 5. Test the API before creating a Pull Request.
 
 If you add a new API, update the **Available API** section of this README.
+
+Technical notes (big changes such as Auth moving from raw `pg` to Prisma, conventions, common local errors) are in [`docs/NOTES.md`](docs/NOTES.md), and the dated change log is in [`docs/CHANGELOG.md`](docs/CHANGELOG.md). Add an entry there when a change affects the rest of the team.
 
 ---
 
