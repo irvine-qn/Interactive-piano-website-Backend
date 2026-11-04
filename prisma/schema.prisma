@@ -42,3 +42,19 @@ model Sheet {
 
   @@map("sheets")
 }
+
+// ===== Feature: Auth =====
+// Khớp đúng bảng `users` mà Auth tạo trước đây bằng SQL (độ dài theo auth.constants.js)
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(50)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  displayName  String?  @map("display_name") @db.VarChar(100)
+  role         String   @default("user") @db.VarChar(20)
+  isVerified   Boolean  @default(false) @map("is_verified")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("users")
+}
