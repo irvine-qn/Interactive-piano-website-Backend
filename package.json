@@ -4,7 +4,18 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test",
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "postdb:migrate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
+    "postdb:deploy": "prisma generate",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "sheets:build": "node scripts/build-sheets.mjs"
   },
   "repository": {
     "type": "git",
@@ -19,9 +30,17 @@
   },
   "homepage": "https://github.com/irvine-qn/Interactive-piano-website-Backend#readme",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@tonejs/midi": "^2.0.28",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "prisma": "^7.10.1"
   }
 }
