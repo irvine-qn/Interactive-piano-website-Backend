@@ -10,6 +10,10 @@ const getSheet = async (req, res) => {
   res.json(await sheetsService.getSheetById(req.params.id, req.userId));
 };
 
+const getScore = async (req, res) => {
+  res.json(await sheetsService.getSheetScore(req.params.id));
+};
+
 const getTags = async (req, res) => {
   res.json(await sheetsService.listTags());
 };
@@ -22,4 +26,4 @@ const postLike = async (req, res) => {
   res.json(await sheetsService.toggleLike(req.params.id, req.userId));
 };
 
-module.exports = { getSheets, getSheet, getTags, postView, postLike };
+module.exports = { getSheets, getSheet, getScore, getTags, postView, postLike };

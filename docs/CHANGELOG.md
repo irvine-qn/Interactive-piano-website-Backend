@@ -5,6 +5,12 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-05 – Chuyển nốt sang bản nhạc
+
+- Thêm `sheets.score.js` và `GET /api/v1/sheets/:id/score`: tính ô nhịp, trường độ và vị trí trên khuông từ số MIDI của từng nốt.
+
+**Cần làm sau khi pull:** khởi động lại server.
+
 ## 2026-11-05 – Lượt xem và lượt thích thật
 
 - Thêm bảng `sheet_likes` và `POST /api/v1/sheets/:id/like` (bắt buộc đăng nhập). API danh sách và chi tiết sheet trả thêm `likedByMe`.

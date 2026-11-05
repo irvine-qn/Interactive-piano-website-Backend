@@ -457,6 +457,36 @@ All tags with the number of sheets using each one, most used first (then A→Z).
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
+### GET `/api/v1/sheets/:id/score`
+
+Converts the sheet notes into staff positions, computed from each note's MIDI number by `sheets.score.js`. The result is not stored.
+
+```json
+{
+  "beats": 3,
+  "beatUnit": 4,
+  "slotsPerMeasure": 12,
+  "measureSeconds": 1.5,
+  "measures": [
+    {
+      "index": 0,
+      "treble": [
+        {
+          "slot": 8,
+          "length": 2,
+          "duration": "8",
+          "isRest": false,
+          "notes": [{ "midi": 76, "name": "E5", "key": "e/5", "accidental": null, "staffStep": 3 }]
+        }
+      ],
+      "bass": []
+    }
+  ]
+}
+```
+
+`slot` and `length` are counted in sixteenth notes. `staffStep` is the distance from the middle line of the staff, in lines and spaces.
+
 ### POST `/api/v1/sheets/:id/like`
 
 Requires `Authorization: Bearer <token>`. Likes the sheet, or removes the like if the user already liked it.

@@ -1,5 +1,6 @@
 const ApiError = require("../../common/exceptions/ApiError");
 const sheetsRepository = require("./sheets.repository");
+const { buildScore } = require("./sheets.score");
 
 const listSheets = async (query, userId) => {
   const { items, total } = await sheetsRepository.findMany(query, userId);
@@ -22,6 +23,8 @@ const getSheetById = async (id, userId) => {
   return sheet;
 };
 
+const getSheetScore = async (id) => buildScore(await getSheetById(id));
+
 const listTags = async () => ({ data: await sheetsRepository.countTags() });
 
 const recordView = async (id) => {
@@ -41,4 +44,4 @@ const toggleLike = async (id, userId) => {
   }
 };
 
-module.exports = { listSheets, getSheetById, listTags, recordView, toggleLike };
+module.exports = { listSheets, getSheetById, getSheetScore, listTags, recordView, toggleLike };
