@@ -1,0 +1,23 @@
+# PostgreSQL cho môi trường dev. Giá trị lấy từ file .env (cùng thư mục), có mặc định nếu thiếu.
+# Chạy: docker compose up -d   |   Dừng: docker compose down   |   Xoá cả dữ liệu: docker compose down -v
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fiano-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fiano}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fiano}
+      POSTGRES_DB: ${POSTGRES_DB:-fiano}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - fiano-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  fiano-pgdata:
