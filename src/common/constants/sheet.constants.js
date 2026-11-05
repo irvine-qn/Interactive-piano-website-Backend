@@ -40,6 +40,8 @@ const STAFF_MIDDLE_LINE = {
 };
 const CLEF_BY_HAND = { right: "treble", left: "bass" };
 const CHORD_GAP_SECONDS = 0.03;
+const MAX_REQUIRED_NOTES = 4;
+const DEFAULT_HAND_OCTAVES = { left: 3, right: 4 };
 
 module.exports = {
   DIFFICULTIES,
@@ -57,4 +59,6 @@ module.exports = {
   STAFF_MIDDLE_LINE,
   CLEF_BY_HAND,
   CHORD_GAP_SECONDS,
+  MAX_REQUIRED_NOTES,
+  DEFAULT_HAND_OCTAVES,
 };

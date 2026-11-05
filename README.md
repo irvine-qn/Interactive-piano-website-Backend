@@ -457,7 +457,7 @@ All tags with the number of sheets using each one, most used first (then A→Z).
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
-`GET /api/v1/sheets/:id` also returns `chords`: `[{ "index": 0, "time": 1, "notes": [{ "name": "E5", "hand": "right" }] }]`. Notes that start within 30 ms form one chord.
+`GET /api/v1/sheets/:id` also returns `chords`: `[{ "index": 0, "time": 1, "octaves": { "left": 3, "right": 4 }, "notes": [{ "name": "E5", "hand": "right", "midi": 76, "duration": 0.236, "velocity": 0.5, "required": true }] }]`. Notes that start within 30 ms form one chord. `octaves` positions each hand's key zone from `GET /api/v1/piano` (`practiceKeys`). At most 4 notes per chord are `required`; Play mode sounds the others automatically. `shortcut` is the computer key for a required note. `zoneMoves` is how many octaves each zone moves from the previous chord.
 
 ### GET `/api/v1/sheets/:id/score`
 
