@@ -81,7 +81,36 @@ const KEYBOARD_KEYS = [
   "m",
 ];
 
+const toZone = (keys) => keys.map(([code, label], offset) => ({ code, label, offset }));
+const PRACTICE_KEY_ZONES = {
+  left: toZone([
+    ["KeyZ", "Z"], ["KeyS", "S"], ["KeyX", "X"], ["KeyD", "D"], ["KeyC", "C"], ["KeyV", "V"],
+    ["KeyG", "G"], ["KeyB", "B"], ["KeyH", "H"], ["KeyN", "N"], ["KeyJ", "J"], ["KeyM", "M"],
+    ["Comma", ","], ["KeyL", "L"], ["Period", "."], ["Semicolon", ";"], ["Slash", "/"],
+  ]),
+  right: toZone([
+    ["KeyQ", "Q"], ["Digit2", "2"], ["KeyW", "W"], ["Digit3", "3"], ["KeyE", "E"], ["KeyR", "R"],
+    ["Digit5", "5"], ["KeyT", "T"], ["Digit6", "6"], ["KeyY", "Y"], ["Digit7", "7"], ["KeyU", "U"],
+    ["KeyI", "I"], ["Digit9", "9"], ["KeyO", "O"], ["Digit0", "0"], ["KeyP", "P"],
+  ]),
+};
+const toChordKeys = (keys) =>
+  keys.map(([code, label], index) => ({ code, label, ...CHORD_TYPES[index] }));
+const CHORD_TYPES = [
+  { name: "major", intervals: [0, 4, 7] },
+  { name: "minor", intervals: [0, 3, 7] },
+  { name: "seventh", intervals: [0, 4, 7, 10] },
+];
+const PRACTICE_CHORD_KEYS = {
+  left: toChordKeys([["KeyA", "A"], ["KeyF", "F"], ["KeyK", "K"]]),
+  right: toChordKeys([["Digit1", "1"], ["Digit4", "4"], ["Digit8", "8"]]),
+};
+const PRACTICE_OCTAVE_RANGE = { min: 0, max: 7 };
+
 module.exports = {
+  PRACTICE_KEY_ZONES,
+  PRACTICE_CHORD_KEYS,
+  PRACTICE_OCTAVE_RANGE,
   NOTE_NAMES,
   MIN_NOTE,
   MAX_NOTE,
