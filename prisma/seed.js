@@ -36,8 +36,7 @@ const main = async () => {
     const data = toSheetData(entry);
     await prisma.sheet.upsert({
       where: { id: entry.id },
-      // views/likes mẫu chỉ ghi lúc tạo mới, seed lại không ghi đè số liệu đã tăng khi chạy app
-      create: { id: entry.id, views: entry.views, likes: entry.likes, ...data },
+      create: { id: entry.id, ...data },
       update: data,
     });
     console.log(`✔ ${entry.id} (${data.noteCount} nốt)`);

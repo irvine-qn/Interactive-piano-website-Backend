@@ -40,26 +40,35 @@ const buildWhere = ({ q, difficulty, tag }) => ({
   ...(tag && { tags: { has: tag } }),
 });
 
-const findMany = async ({ q, difficulty, tag, sort, page, pageSize }) => {
+const withLikedByMe = (userId) => ({
+  ...SUMMARY_SELECT,
+  ...(userId && { likedBy: { where: { userId }, select: { userId: true } } }),
+});
+
+const toSheet = ({ likedBy, ...sheet }) => ({ ...sheet, likedByMe: Boolean(likedBy?.length) });
+
+const findMany = async ({ q, difficulty, tag, sort, page, pageSize }, userId) => {
   const where = buildWhere({ q, difficulty, tag });
   const [items, total] = await prisma.$transaction([
     prisma.sheet.findMany({
       where,
-      select: SUMMARY_SELECT,
+      select: withLikedByMe(userId),
       orderBy: [ORDER_BY[sort], { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
     prisma.sheet.count({ where }),
   ]);
-  return { items, total };
+  return { items: items.map(toSheet), total };
 };
 
-const findById = (id) =>
-  prisma.sheet.findUnique({
+const findById = async (id, userId) => {
+  const sheet = await prisma.sheet.findUnique({
     where: { id },
-    select: { ...SUMMARY_SELECT, notes: true },
+    select: { ...withLikedByMe(userId), notes: true },
   });
+  return sheet && toSheet(sheet);
+};
 
 // Prisma không group được theo phần tử của mảng nên dùng SQL: tách mảng tags thành từng dòng rồi đếm
 const countTags = () =>
@@ -85,4 +94,29 @@ const incrementViews = async (id) => {
   }
 };
 
-module.exports = { findMany, findById, countTags, incrementViews };
+const toggleLike = (sheetId, userId) =>
+  prisma.$transaction(async (tx) => {
+    const sheet = await tx.sheet.findUnique({ where: { id: sheetId }, select: { id: true } });
+    if (!sheet) return null;
+
+    const where = { userId, sheetId };
+    const removed = await tx.sheetLike.deleteMany({ where });
+    if (removed.count > 0) {
+      const { likes } = await tx.sheet.update({
+        where: { id: sheetId },
+        data: { likes: { decrement: removed.count } },
+        select: { likes: true },
+      });
+      return { liked: false, likes };
+    }
+
+    const added = await tx.sheetLike.createMany({ data: [where], skipDuplicates: true });
+    const { likes } = await tx.sheet.update({
+      where: { id: sheetId },
+      data: { likes: { increment: added.count } },
+      select: { likes: true },
+    });
+    return { liked: true, likes };
+  });
+
+module.exports = { findMany, findById, countTags, incrementViews, toggleLike };

@@ -1,8 +1,8 @@
 const ApiError = require("../../common/exceptions/ApiError");
 const sheetsRepository = require("./sheets.repository");
 
-const listSheets = async (query) => {
-  const { items, total } = await sheetsRepository.findMany(query);
+const listSheets = async (query, userId) => {
+  const { items, total } = await sheetsRepository.findMany(query, userId);
   return {
     data: items,
     meta: {
@@ -16,8 +16,8 @@ const listSheets = async (query) => {
 
 const sheetNotFound = (id) => new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}" not found`);
 
-const getSheetById = async (id) => {
-  const sheet = await sheetsRepository.findById(id);
+const getSheetById = async (id, userId) => {
+  const sheet = await sheetsRepository.findById(id, userId);
   if (!sheet) throw sheetNotFound(id);
   return sheet;
 };
@@ -30,4 +30,15 @@ const recordView = async (id) => {
   return result;
 };
 
-module.exports = { listSheets, getSheetById, listTags, recordView };
+const toggleLike = async (id, userId) => {
+  try {
+    const result = await sheetsRepository.toggleLike(id, userId);
+    if (!result) throw sheetNotFound(id);
+    return result;
+  } catch (error) {
+    if (error.code === "P2003") throw new ApiError(401, "UNAUTHORIZED", "Please log in to continue");
+    throw error;
+  }
+};
+
+module.exports = { listSheets, getSheetById, listTags, recordView, toggleLike };
