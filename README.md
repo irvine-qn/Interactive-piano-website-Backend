@@ -457,6 +457,16 @@ All tags with the number of sheets using each one, most used first (then A→Z).
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
+### POST `/api/v1/sheets/:id/like`
+
+Requires `Authorization: Bearer <token>`. Likes the sheet, or removes the like if the user already liked it.
+
+```json
+{ "liked": true, "likes": 1 }
+```
+
+Returns `401 UNAUTHORIZED` without a valid token and `404 SHEET_NOT_FOUND` if the sheet does not exist. `GET /api/v1/sheets` and `GET /api/v1/sheets/:id` also return `likedByMe`.
+
 ### POST `/api/v1/sheets/:id/view`
 
 Add one view to a sheet (no auth, no request body). The increment is atomic, so concurrent requests are all counted. Returns the new total:

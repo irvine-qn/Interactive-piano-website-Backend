@@ -5,6 +5,14 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-05 – Lượt xem và lượt thích thật
+
+- Thêm bảng `sheet_likes` và `POST /api/v1/sheets/:id/like` (bắt buộc đăng nhập). API danh sách và chi tiết sheet trả thêm `likedByMe`.
+- Bỏ số `views`, `likes` mẫu trong `catalog.json`. Migration `add_sheet_likes` đưa hai cột này về 0.
+- Thêm `src/common/middlewares/auth.middleware.js` (`requireAuth`, `optionalAuth`).
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, rồi khởi động lại server.
+
 ## 2026-11-05
 
 - Thêm thư mục `docs/` (`NOTES.md`, `CHANGELOG.md`) để ghi chú kỹ thuật và nhật ký thay đổi.
