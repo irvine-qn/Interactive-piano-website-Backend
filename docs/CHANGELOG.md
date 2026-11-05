@@ -7,6 +7,7 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ## 2026-11-05 – Chuyển nốt sang bản nhạc
 
+- `GET /api/v1/sheets/:id` trả thêm `chords`: các nhóm nốt người chơi phải nhấn trong chế độ Play, FE không tự gom nốt.
 - Thêm `sheets.score.js` và `GET /api/v1/sheets/:id/score`: tính ô nhịp, trường độ và vị trí trên khuông từ số MIDI của từng nốt.
 
 **Cần làm sau khi pull:** khởi động lại server.

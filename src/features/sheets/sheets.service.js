@@ -1,6 +1,6 @@
 const ApiError = require("../../common/exceptions/ApiError");
 const sheetsRepository = require("./sheets.repository");
-const { buildScore } = require("./sheets.score");
+const { buildChords, buildScore } = require("./sheets.score");
 
 const listSheets = async (query, userId) => {
   const { items, total } = await sheetsRepository.findMany(query, userId);
@@ -20,7 +20,7 @@ const sheetNotFound = (id) => new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}
 const getSheetById = async (id, userId) => {
   const sheet = await sheetsRepository.findById(id, userId);
   if (!sheet) throw sheetNotFound(id);
-  return sheet;
+  return { ...sheet, chords: buildChords(sheet.notes) };
 };
 
 const getSheetScore = async (id) => buildScore(await getSheetById(id));

@@ -39,6 +39,7 @@ const STAFF_MIDDLE_LINE = {
   bass: { letter: "D", octave: 3 },
 };
 const CLEF_BY_HAND = { right: "treble", left: "bass" };
+const CHORD_GAP_SECONDS = 0.03;
 
 module.exports = {
   DIFFICULTIES,
@@ -55,4 +56,5 @@ module.exports = {
   MIDI_OCTAVE_OFFSET,
   STAFF_MIDDLE_LINE,
   CLEF_BY_HAND,
+  CHORD_GAP_SECONDS,
 };

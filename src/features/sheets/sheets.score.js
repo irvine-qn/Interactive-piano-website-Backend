@@ -9,6 +9,7 @@ const {
   MIDI_OCTAVE_OFFSET,
   STAFF_MIDDLE_LINE,
   CLEF_BY_HAND,
+  CHORD_GAP_SECONDS,
 } = require("../../common/constants/sheet.constants");
 
 const diatonicIndex = (letter, octave) =>
@@ -102,4 +103,17 @@ const buildScore = ({ notes, bpm, timeSignature }) => {
   };
 };
 
-module.exports = { buildScore, midiToStaffNote };
+const buildChords = (notes) => {
+  const chords = [];
+  notes.forEach(({ name, hand, time }) => {
+    const last = chords[chords.length - 1];
+    if (last && time - last.time <= CHORD_GAP_SECONDS) {
+      if (!last.notes.some((note) => note.name === name)) last.notes.push({ name, hand });
+    } else {
+      chords.push({ index: chords.length, time, notes: [{ name, hand }] });
+    }
+  });
+  return chords;
+};
+
+module.exports = { buildScore, buildChords, midiToStaffNote };

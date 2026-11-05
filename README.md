@@ -457,6 +457,8 @@ All tags with the number of sheets using each one, most used first (then A→Z).
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
+`GET /api/v1/sheets/:id` also returns `chords`: `[{ "index": 0, "time": 1, "notes": [{ "name": "E5", "hand": "right" }] }]`. Notes that start within 30 ms form one chord.
+
 ### GET `/api/v1/sheets/:id/score`
 
 Converts the sheet notes into staff positions, computed from each note's MIDI number by `sheets.score.js`. The result is not stored.
