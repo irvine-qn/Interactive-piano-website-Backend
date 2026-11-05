@@ -18,6 +18,23 @@ const CHROMATIC_NOTES = [
   { letter: "A", accidental: "#" },
   { letter: "B" },
 ];
+const KEY_SIGNATURES = [
+  { name: "C", usesFlats: false, scale: ["C", "D", "E", "F", "G", "A", "B"] },
+  { name: "G", usesFlats: false, scale: ["G", "A", "B", "C", "D", "E", "F#"] },
+  { name: "F", usesFlats: true, scale: ["F", "G", "A", "Bb", "C", "D", "E"] },
+  { name: "D", usesFlats: false, scale: ["D", "E", "F#", "G", "A", "B", "C#"] },
+  { name: "Bb", usesFlats: true, scale: ["Bb", "C", "D", "Eb", "F", "G", "A"] },
+  { name: "A", usesFlats: false, scale: ["A", "B", "C#", "D", "E", "F#", "G#"] },
+  { name: "Eb", usesFlats: true, scale: ["Eb", "F", "G", "Ab", "Bb", "C", "D"] },
+  { name: "E", usesFlats: false, scale: ["E", "F#", "G#", "A", "B", "C#", "D#"] },
+  { name: "Ab", usesFlats: true, scale: ["Ab", "Bb", "C", "Db", "Eb", "F", "G"] },
+  { name: "B", usesFlats: false, scale: ["B", "C#", "D#", "E", "F#", "G#", "A#"] },
+  { name: "Db", usesFlats: true, scale: ["Db", "Eb", "F", "Gb", "Ab", "Bb", "C"] },
+  { name: "F#", usesFlats: false, scale: ["F#", "G#", "A#", "B", "C#", "D#", "E#"] },
+];
+const NATURAL_PITCH_CLASSES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const ACCIDENTAL_SEMITONES = { "#": 1, b: -1 };
+const RELATIVE_MAJOR_SEMITONES = 3;
 const DIATONIC_LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
 const NOTE_DURATIONS = [
   { sixteenths: 16, code: "w" },
@@ -49,6 +66,10 @@ module.exports = {
   DEFAULT_SORT,
   MAX_PAGE_SIZE,
   CHROMATIC_NOTES,
+  KEY_SIGNATURES,
+  NATURAL_PITCH_CLASSES,
+  ACCIDENTAL_SEMITONES,
+  RELATIVE_MAJOR_SEMITONES,
   DIATONIC_LETTERS,
   NOTE_DURATIONS,
   SEMITONES_PER_OCTAVE,
