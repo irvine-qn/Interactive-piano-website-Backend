@@ -5,6 +5,37 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-05 – Hoá biểu, dấu nối và test
+
+- `/sheets/:id/score` trả thêm `keySignature` và `tieToNext`. `accidental` có thể là `#`, `b`, `n` hoặc `null`.
+- Thêm `npm test` (`node:test`), file test đặt cạnh code.
+
+## 2026-11-05 – Lệnh dev
+
+- Thêm `npm run dev`: server tự khởi động lại khi sửa code. `npm start` giữ nguyên.
+
+## 2026-11-05 – Phím Practice hai tay
+
+- `GET /api/v1/piano` trả thêm `practiceKeys`: hai vùng phím không dùng Shift (`zones`) và phím giữ để chơi hợp âm (`chordKeys`). Cả Home và Practice đều dùng.
+- `chords` có thêm `octaves`, `required` (tối đa 4 nốt cần nhấn mỗi hợp âm) và `shortcut` (phím máy tính của nốt cần nhấn).
+
+**Cần làm sau khi pull:** khởi động lại server.
+
+## 2026-11-05 – Chuyển nốt sang bản nhạc
+
+- `GET /api/v1/sheets/:id` trả thêm `chords`: các nhóm nốt người chơi phải nhấn trong chế độ Play, FE không tự gom nốt.
+- Thêm `sheets.score.js` và `GET /api/v1/sheets/:id/score`: tính ô nhịp, trường độ và vị trí trên khuông từ số MIDI của từng nốt.
+
+**Cần làm sau khi pull:** khởi động lại server.
+
+## 2026-11-05 – Lượt xem và lượt thích thật
+
+- Thêm bảng `sheet_likes` và `POST /api/v1/sheets/:id/like` (bắt buộc đăng nhập). API danh sách và chi tiết sheet trả thêm `likedByMe`.
+- Bỏ số `views`, `likes` mẫu trong `catalog.json`. Migration `add_sheet_likes` đưa hai cột này về 0.
+- Thêm `src/common/middlewares/auth.middleware.js` (`requireAuth`, `optionalAuth`).
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, rồi khởi động lại server.
+
 ## 2026-11-05
 
 - Thêm thư mục `docs/` (`NOTES.md`, `CHANGELOG.md`) để ghi chú kỹ thuật và nhật ký thay đổi.

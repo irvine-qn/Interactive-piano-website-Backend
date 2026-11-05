@@ -38,6 +38,7 @@ model Sheet {
   notes         Json
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
+  likedBy       SheetLike[]
   // uploaderId sẽ thêm bằng migration riêng khi có bảng users (Feature Auth/User)
 
   @@map("sheets")
@@ -55,6 +56,19 @@ model User {
   role         String   @default("user") @db.VarChar(20)
   isVerified   Boolean  @default(false) @map("is_verified")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  likedSheets  SheetLike[]
 
   @@map("users")
+}
+
+model SheetLike {
+  userId    Int      @map("user_id")
+  sheetId   String   @map("sheet_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sheet     Sheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@id([userId, sheetId])
+  @@index([sheetId])
+  @@map("sheet_likes")
 }

@@ -6,6 +6,9 @@ const {
   MAX_BPM,
   DEFAULT_BPM,
   KEYBOARD_KEYS,
+  PRACTICE_KEY_ZONES,
+  PRACTICE_CHORD_KEYS,
+  PRACTICE_OCTAVE_RANGE,
 } = require("../../common/constants/piano.constants");
 
 const notes = Array.from({ length: MAX_NOTE - MIN_NOTE + 1 }, (_, index) => {
@@ -31,6 +34,7 @@ const getPianoConfig = () => ({
   minMidiNote: MIN_NOTE,
   maxMidiNote: MAX_NOTE,
   notes,
+  practiceKeys: { zones: PRACTICE_KEY_ZONES, chordKeys: PRACTICE_CHORD_KEYS, octaveRange: PRACTICE_OCTAVE_RANGE },
 });
 
 const getFrequencies = () => frequencies;

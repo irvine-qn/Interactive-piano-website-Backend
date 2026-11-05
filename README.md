@@ -457,6 +457,48 @@ All tags with the number of sheets using each one, most used first (then A→Z).
 
 Same fields as above plus `notes`, sorted by `time` (seconds): `{ midi, name, time, duration, velocity, hand }` where `hand` is `left` or `right`.
 
+`GET /api/v1/sheets/:id` also returns `chords`: `[{ "index": 0, "time": 1, "octaves": { "left": 3, "right": 4 }, "notes": [{ "name": "E5", "hand": "right", "midi": 76, "duration": 0.236, "velocity": 0.5, "required": true }] }]`. Notes that start within 30 ms form one chord. `octaves` positions each hand's key zone from `GET /api/v1/piano` (`practiceKeys`). At most 4 notes per chord are `required`; Play mode sounds the others automatically. `shortcut` is the computer key for a required note. `zoneMoves` is how many octaves each zone moves from the previous chord.
+
+### GET `/api/v1/sheets/:id/score`
+
+Converts the sheet notes into staff positions, computed from each note's MIDI number by `sheets.score.js`. The result is not stored.
+
+```json
+{
+  "beats": 3,
+  "beatUnit": 4,
+  "slotsPerMeasure": 12,
+  "measureSeconds": 1.5,
+  "measures": [
+    {
+      "index": 0,
+      "treble": [
+        {
+          "slot": 8,
+          "length": 2,
+          "duration": "8",
+          "isRest": false,
+          "notes": [{ "midi": 76, "name": "E5", "key": "e/5", "accidental": null, "staffStep": 3 }]
+        }
+      ],
+      "bass": []
+    }
+  ]
+}
+```
+
+`slot` and `length` are counted in sixteenth notes. `staffStep` is the distance from the middle line of the staff, in lines and spaces.
+
+### POST `/api/v1/sheets/:id/like`
+
+Requires `Authorization: Bearer <token>`. Likes the sheet, or removes the like if the user already liked it.
+
+```json
+{ "liked": true, "likes": 1 }
+```
+
+Returns `401 UNAUTHORIZED` without a valid token and `404 SHEET_NOT_FOUND` if the sheet does not exist. `GET /api/v1/sheets` and `GET /api/v1/sheets/:id` also return `likedByMe`.
+
 ### POST `/api/v1/sheets/:id/view`
 
 Add one view to a sheet (no auth, no request body). The increment is atomic, so concurrent requests are all counted. Returns the new total:
