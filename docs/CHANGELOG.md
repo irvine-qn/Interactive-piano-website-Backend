@@ -5,6 +5,11 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-05 – Hoá biểu, dấu nối và test
+
+- `/sheets/:id/score` trả thêm `keySignature` và `tieToNext`. `accidental` có thể là `#`, `b`, `n` hoặc `null`.
+- Thêm `npm test` (`node:test`), file test đặt cạnh code.
+
 ## 2026-11-05 – Lệnh dev
 
 - Thêm `npm run dev`: server tự khởi động lại khi sửa code. `npm start` giữ nguyên.

@@ -315,25 +315,27 @@ Chuyển nốt của bài sang vị trí trên khuông nhạc. Kết quả đư�
 {
   "beats": 3,
   "beatUnit": 4,
+  "keySignature": "C",
   "slotsPerMeasure": 12,
   "measureSeconds": 1.5,
   "measures": [
     {
       "index": 0,
       "treble": [
-        { "slot": 0, "length": 8, "duration": "h", "isRest": true, "notes": [] },
+        { "slot": 0, "length": 8, "duration": "h", "isRest": true, "tieToNext": false, "notes": [] },
         {
           "slot": 8,
           "length": 2,
           "duration": "8",
           "isRest": false,
+          "tieToNext": false,
           "notes": [
             { "midi": 76, "name": "E5", "key": "e/5", "accidental": null, "staffStep": 3 }
           ]
         }
       ],
       "bass": [
-        { "slot": 0, "length": 12, "duration": "hd", "isRest": true, "notes": [] }
+        { "slot": 0, "length": 12, "duration": "hd", "isRest": true, "tieToNext": false, "notes": [] }
       ]
     }
   ]
@@ -344,8 +346,11 @@ Chuyển nốt của bài sang vị trí trên khuông nhạc. Kết quả đư�
 | --- | --- |
 | `slot`, `length` | Vị trí và độ dài trong ô nhịp, tính theo nốt móc đôi |
 | `duration` | `w`, `hd`, `h`, `qd`, `q`, `8d`, `8`, `16` |
-| `key` | Cao độ theo định dạng VexFlow |
-| `accidental` | `#` hoặc `null` |
+| `keySignature` | Hoá biểu theo giọng trưởng, lấy từ dữ liệu bài hoặc suy ra từ nốt |
+| `tieToNext` | Nốt được nối với nốt kế tiếp của cùng khuông |
+| `name` | Tên nốt theo dấu thăng, dùng để so với `notes` và `chords` |
+| `key` | Cao độ viết theo hoá biểu, định dạng VexFlow |
+| `accidental` | Dấu cần ghi trước nốt: `#`, `b`, `n` (dấu bình), hoặc `null` |
 | `staffStep` | Số dòng và khe tính từ dòng giữa của khuông |
 
 **Lỗi:** `404 SHEET_NOT_FOUND`.
