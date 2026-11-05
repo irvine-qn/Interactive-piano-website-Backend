@@ -5,6 +5,17 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-05 – Lệnh dev
+
+- Thêm `npm run dev`: server tự khởi động lại khi sửa code. `npm start` giữ nguyên.
+
+## 2026-11-05 – Phím Practice hai tay
+
+- `GET /api/v1/piano` trả thêm `practiceKeys`: hai vùng phím không dùng Shift (`zones`) và phím giữ để chơi hợp âm (`chordKeys`). Cả Home và Practice đều dùng.
+- `chords` có thêm `octaves`, `required` (tối đa 4 nốt cần nhấn mỗi hợp âm) và `shortcut` (phím máy tính của nốt cần nhấn).
+
+**Cần làm sau khi pull:** khởi động lại server.
+
 ## 2026-11-05 – Chuyển nốt sang bản nhạc
 
 - `GET /api/v1/sheets/:id` trả thêm `chords`: các nhóm nốt người chơi phải nhấn trong chế độ Play, FE không tự gom nốt.
