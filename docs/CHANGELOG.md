@@ -5,6 +5,13 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-06 – Nhận file upload (U-BE-05, Bình)
+
+- Thêm thư viện `multer` và middleware `src/common/middlewares/upload.middleware.js` (`receiveMidiFile`): nhận đúng 1 file MIDI ở trường `file` (≤ 1 MB, đuôi `.mid`/`.midi`, bắt đầu bằng `MThd`), giữ tên file tiếng Việt. Chưa gắn vào route nào (làm ở U-BE-06).
+- Lỗi: `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE`, `400 FILE_REQUIRED`, `400 UNEXPECTED_FILE`, `400 INVALID_UPLOAD`.
+
+**Cần làm sau khi pull:** `npm install`.
+
 ## 2026-11-06 – Database cho bài upload (U-BE-04, Bình)
 
 - Migration `add_sheet_uploads`: `sheets` thêm `uploader_id` (FK `users`, null = bài mẫu) và `visibility` (`PUBLIC` | `PRIVATE`, bài cũ là PUBLIC); bảng mới `sheet_files` lưu file MIDI gốc. Chỉ thêm cột/bảng, không đổi dữ liệu cũ. API chưa đổi.

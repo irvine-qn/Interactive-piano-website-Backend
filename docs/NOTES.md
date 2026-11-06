@@ -75,6 +75,17 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - Tên nốt dạng `C4`, `F#3` (dấu thăng `#`, không dùng giáng). FE tra phím theo tên này.
 - **Engine chuyển MIDI → nốt:** `src/features/uploads/midiToSheet.js` (chọn track, chia tay, khử nốt trùng, lọc 88 phím). Dùng chung cho tool seed (`scripts/midi-to-sheet.mjs`, `npm run sheets:build`) và Feature **Upload**. Tool seed chỉ đọc file và xử lý tham số dòng lệnh. Xem README › *Adding a new sample sheet*.
 - Engine dùng cho file người dùng tải lên nên **không tin dữ liệu vào**: kiểm tra header `MThd`, giới hạn 20 000 nốt / 20 phút, bỏ nốt ngoài 88 phím, kéo nốt dài 0 giây thành 0.05 s. Lỗi ném ra là `ApiError` 422 với mã `INVALID_MIDI` | `INVALID_TRACKS` | `NO_NOTES` | `MIDI_TOO_LARGE` và câu tiếng Anh (hiện thẳng lên giao diện). `convertMidi` trả `{ metadata, notes, warnings }`; `warnings` không lưu vào DB.
+- **Nhận file:** route upload dùng middleware `receiveMidiFile` (`src/common/middlewares/upload.middleware.js`, thư viện `multer`), đặt **sau** `requireAuth`. File nằm ở `req.file.buffer` (RAM, không ghi ra ổ đĩa), các trường chữ của form ở `req.body` (luôn là chuỗi, phải tự kiểm tra/chuyển kiểu). Middleware chỉ kiểm tra "có phải file MIDI không"; nội dung do engine kiểm tra. Mã lỗi:
+
+  | Lỗi | Khi nào |
+  | --- | --- |
+  | `400 FILE_REQUIRED` | Không gửi file |
+  | `400 UNEXPECTED_FILE` | Gửi nhiều file hoặc sai tên trường (phải là `file`) |
+  | `400 INVALID_UPLOAD` | Request multipart hỏng, quá nhiều trường |
+  | `413 FILE_TOO_LARGE` | File lớn hơn 1 MB |
+  | `415 UNSUPPORTED_FILE` | Sai đuôi (`.mid`/`.midi`) hoặc không bắt đầu bằng `MThd` |
+  | `422 INVALID_MIDI`, `MIDI_TOO_LARGE`, `NO_NOTES`, `INVALID_TRACKS` | Engine đọc nội dung file |
+
 - Gợi ý track (`pickDefaultTracks`) chỉ là gợi ý (khớp 8/9 bài mẫu so với chọn tay, sai ở `merry-christmas-mr-lawrence` vì track *music box* không thuộc họ piano), nên upload luôn cho người dùng xác nhận track.
 - Sửa engine thì chạy `npm test`: test `midiToSheet.test.js` chuyển lại 9 bài mẫu và so **từng nốt** với file JSON đã lưu, kết quả bài mẫu không được đổi (trừ khi cố ý, khi đó chạy lại `npm run sheets:build` + `npm run db:seed`).
 
