@@ -164,7 +164,7 @@ const findPracticeHistory = async (userId, { page, pageSize }) => {
         sheetId: true,
         noteCount: true,
         durationSec: true,
-        sheet: { select: { title: true } },
+        sheet: { select: { title: true, composer: true, coverColor: true } },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip: (page - 1) * pageSize,
@@ -173,7 +173,7 @@ const findPracticeHistory = async (userId, { page, pageSize }) => {
     prisma.practiceSession.count({ where }),
   ]);
   return {
-    items: items.map(({ sheet, ...session }) => ({ ...session, title: sheet.title })),
+    items: items.map(({ sheet, ...session }) => ({ ...session, ...sheet })),
     total,
   };
 };

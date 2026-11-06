@@ -339,7 +339,7 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
 ```json
 {
   "data": [
-    { "id": 1, "sheetId": "fur-elise", "title": "Für Elise", "noteCount": 120, "durationSec": 95 }
+    { "id": 1, "sheetId": "fur-elise", "title": "Für Elise", "composer": "Beethoven", "coverColor": "yellow", "noteCount": 120, "durationSec": 95 }
   ],
   "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
 }
