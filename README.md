@@ -706,6 +706,8 @@ Example endpoints:
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
 
+GET    /api/v1/users/me
+
 GET    /api/v1/sheets
 POST   /api/v1/sheets
 GET    /api/v1/sheets/:id

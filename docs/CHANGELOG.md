@@ -5,6 +5,10 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-06 – API người dùng (UP-01)
+
+- Thêm `GET /api/v1/users/me`, trả thông tin tài khoản đang đăng nhập. Không cần migration.
+
 ## 2026-11-05 – Hoá biểu, dấu nối và test
 
 - `/sheets/:id/score` trả thêm `keySignature` và `tieToNext`. `accidental` có thể là `#`, `b`, `n` hoặc `null`.

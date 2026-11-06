@@ -56,4 +56,4 @@ const login = async ({ identifier, password }) => {
   return { accessToken: signAccessToken(user), user: toPublicUser(user) };
 };
 
-module.exports = { register, login };
+module.exports = { register, login, toPublicUser };

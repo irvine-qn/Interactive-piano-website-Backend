@@ -50,6 +50,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | --- | --- | --- | --- |
 | POST | `/auth/register` | Không | Đăng ký |
 | POST | `/auth/login` | Không | Đăng nhập |
+| GET | `/users/me` | Bắt buộc | Thông tin tài khoản đang đăng nhập |
 | GET | `/piano` | Không | Cấu hình đàn và bảng phím |
 | GET | `/frequencies` | Không | Tần số theo tên nốt |
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
@@ -117,6 +118,16 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 **Thành công: `200`**, cùng dạng với response của đăng ký.
 
 **Lỗi:** `400 INVALID_JSON`, `401 INVALID_CREDENTIALS`, `422 VALIDATION_FAILED`.
+
+---
+
+## Users
+
+### GET `/users/me`
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
+
+**Lỗi:** `401 UNAUTHORIZED`.
 
 ---
 

@@ -21,6 +21,11 @@ const findByUsernameOrEmail = async (username, email) => {
   return users.map(toRow);
 };
 
+const findById = async (id) => {
+  const user = await prisma.user.findUnique({ where: { id } });
+  return toRow(user) || null;
+};
+
 const findByIdentifier = async (identifier) => {
   const user = await prisma.user.findFirst({
     where: { OR: [{ username: identifier }, { email: identifier }] },
@@ -37,6 +42,7 @@ const createUser = async ({ displayName, username, email, passwordHash }) => {
 
 module.exports = {
   findByUsernameOrEmail,
+  findById,
   findByIdentifier,
   createUser,
 };
