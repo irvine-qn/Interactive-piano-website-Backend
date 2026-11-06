@@ -20,6 +20,8 @@ const toRow = (user) =>
     favorite_genres: user.favoriteGenres,
     favorite_artists: user.favoriteArtists,
     show_practice_stats: user.showPracticeStats,
+    avatar_url: user.avatarUrl,
+    background_url: user.backgroundUrl,
   };
 
 const findByUsernameOrEmail = async (username, email) => {
@@ -57,7 +59,44 @@ const updateProfile = async (id, data) => {
   }
 };
 
+const findImage = (userId, kind) =>
+  prisma.userImage.findUnique({ where: { userId_kind: { userId, kind } } });
+
+// Ảnh và URL đổi cùng lúc
+const saveImage = async (userId, kind, image, urlData) => {
+  try {
+    const [, user] = await prisma.$transaction([
+      prisma.userImage.upsert({
+        where: { userId_kind: { userId, kind } },
+        create: { userId, kind, ...image },
+        update: image,
+      }),
+      prisma.user.update({ where: { id: userId }, data: urlData }),
+    ]);
+    return toRow(user);
+  } catch (error) {
+    if (["P2003", "P2025"].includes(error.code)) return null;
+    throw error;
+  }
+};
+
+const deleteImage = async (userId, kind, urlData) => {
+  try {
+    const [, user] = await prisma.$transaction([
+      prisma.userImage.deleteMany({ where: { userId, kind } }),
+      prisma.user.update({ where: { id: userId }, data: urlData }),
+    ]);
+    return toRow(user);
+  } catch (error) {
+    if (error.code === "P2025") return null;
+    throw error;
+  }
+};
+
 module.exports = {
+  findImage,
+  saveImage,
+  deleteImage,
   updateProfile,
   findByUsernameOrEmail,
   findById,

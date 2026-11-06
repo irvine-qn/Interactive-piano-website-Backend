@@ -5,6 +5,12 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-08 – Ảnh hồ sơ
+
+- Thêm API tải, xoá và lấy ảnh `avatar` / `background`, tạm lưu trong PostgreSQL (bảng `user_images`). User trả thêm `avatarUrl`, `backgroundUrl`.
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`.
+
 ## 2026-11-06 – Upload MIDI (Bình)
 
 Người dùng tải file MIDI lên thành bài nhạc chơi được ở Workspace. Phần Backend đã xong, trừ lưu file trên Cloud (làm khi deploy).
@@ -18,6 +24,7 @@ Người dùng tải file MIDI lên thành bài nhạc chơi được ở Worksp
 - **Kiểm thử:** `npm test` (không cần DB) và `npm run uploads:smoke` (chạy với DB thật, tự dọn dữ liệu).
 
 **Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`.
+
 ## 2026-11-06 – API người dùng (Quỳnh)
 
 - Thêm `GET /api/v1/users/me`, trả thông tin tài khoản đang đăng nhập. Không cần migration.

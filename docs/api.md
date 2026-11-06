@@ -63,6 +63,9 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | POST | `/auth/login` | Không | Đăng nhập |
 | GET | `/users/me` | Bắt buộc | Thông tin tài khoản đang đăng nhập |
 | PUT | `/users/profile` | Bắt buộc | Cập nhật hồ sơ |
+| PUT | `/users/profile/images/:kind` | Bắt buộc | Tải ảnh (`avatar` hoặc `background`), multipart trường `file`, tối đa 5 MB; trả về user |
+| DELETE | `/users/profile/images/:kind` | Bắt buộc | Xoá ảnh; trả về user |
+| GET | `/users/:id/images/:kind` | Không | Lấy ảnh |
 | GET | `/piano` | Không | Cấu hình đàn và bảng phím |
 | GET | `/frequencies` | Không | Tần số theo tên nốt |
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |

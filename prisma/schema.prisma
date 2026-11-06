@@ -53,7 +53,6 @@ model Sheet {
   visibility    Visibility  @default(PUBLIC)
   file          SheetFile?
   practiceSessions PracticeSession[]
-  // uploaderId sẽ thêm bằng migration riêng khi có bảng users (Feature Auth/User)
 
   @@index([uploaderId])
   @@map("sheets")
@@ -96,8 +95,23 @@ model User {
   likedSheets  SheetLike[]
   practiceSessions PracticeSession[]
   uploadedSheets Sheet[]     @relation("UploadedSheets")
+  avatarUrl      String?     @map("avatar_url") @db.VarChar(255)
+  backgroundUrl  String?     @map("background_url") @db.VarChar(255)
+  images         UserImage[]
 
   @@map("users")
+}
+
+// Ảnh hồ sơ tạm lưu trong PostgreSQL, sau này chuyển sang Cloudinary
+model UserImage {
+  userId   Int    @map("user_id")
+  kind     String @db.VarChar(20) // avatar | background
+  data     Bytes
+  mimeType String @map("mime_type") @db.VarChar(50)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, kind])
+  @@map("user_images")
 }
 
 model SheetLike {

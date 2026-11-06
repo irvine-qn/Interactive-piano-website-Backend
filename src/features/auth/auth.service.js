@@ -21,6 +21,8 @@ const toPublicUser = (user) => ({
   favoriteGenres: user.favorite_genres,
   favoriteArtists: user.favorite_artists,
   showPracticeStats: user.show_practice_stats,
+  avatarUrl: user.avatar_url,
+  backgroundUrl: user.background_url,
 });
 
 const signAccessToken = (user) =>
