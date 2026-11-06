@@ -4,6 +4,9 @@ const {
   DIFFICULTIES,
   SORT_OPTIONS,
   DEFAULT_SORT,
+  PRACTICE_MIN_NOTES,
+  PRACTICE_MAX_NOTES,
+  PRACTICE_MAX_DURATION_SEC,
 } = require("../../common/constants/sheet.constants");
 
 const toPositiveInt = (value, fallback, field) => {
@@ -42,4 +45,28 @@ const parseListQuery = (query) => {
   };
 };
 
-module.exports = { parseListQuery };
+const parsePageQuery = (query) => ({
+  page: toPositiveInt(query.page, 1, "page"),
+  pageSize: Math.min(toPositiveInt(query.pageSize, 8, "pageSize"), MAX_PAGE_SIZE),
+});
+
+const parsePracticeBody = (body = {}) => {
+  const { noteCount, durationSec } = body;
+  if (!Number.isInteger(noteCount) || noteCount < PRACTICE_MIN_NOTES || noteCount > PRACTICE_MAX_NOTES) {
+    throw new ApiError(
+      422,
+      "VALIDATION_FAILED",
+      `noteCount must be an integer from ${PRACTICE_MIN_NOTES} to ${PRACTICE_MAX_NOTES}`,
+    );
+  }
+  if (!Number.isInteger(durationSec) || durationSec < 0 || durationSec > PRACTICE_MAX_DURATION_SEC) {
+    throw new ApiError(
+      422,
+      "VALIDATION_FAILED",
+      `durationSec must be an integer from 0 to ${PRACTICE_MAX_DURATION_SEC}`,
+    );
+  }
+  return { noteCount, durationSec };
+};
+
+module.exports = { parseListQuery, parsePageQuery, parsePracticeBody };

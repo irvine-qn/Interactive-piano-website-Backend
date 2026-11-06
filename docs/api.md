@@ -61,10 +61,14 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | --- | --- | --- | --- |
 | POST | `/auth/register` | Không | Đăng ký |
 | POST | `/auth/login` | Không | Đăng nhập |
+| GET | `/users/me` | Bắt buộc | Thông tin tài khoản đang đăng nhập |
+| PUT | `/users/profile` | Bắt buộc | Cập nhật hồ sơ |
 | GET | `/piano` | Không | Cấu hình đàn và bảng phím |
 | GET | `/frequencies` | Không | Tần số theo tên nốt |
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
 | GET | `/sheets/tags` | Không | Danh sách thể loại |
+| GET | `/sheets/liked` | Bắt buộc | Danh sách bài người dùng đã thích |
+| GET | `/sheets/practice-history` | Bắt buộc | Lịch sử chơi của người dùng |
 | GET | `/sheets/:id` | Tùy chọn | Chi tiết bài nhạc |
 | GET | `/sheets/:id/score` | Tùy chọn | Bản nhạc đã chuyển sang vị trí trên khuông |
 | POST | `/sheets/:id/view` | Tùy chọn | Tăng lượt xem |
@@ -75,6 +79,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | DELETE | `/sheets/:id` | Bắt buộc | Xoá bài của mình |
 | GET | `/users/me/sheets` | Bắt buộc | Bài tôi đã upload (cả `PRIVATE`) |
 | GET | `/users/:id/sheets` | Tùy chọn | Bài `PUBLIC` của một người dùng (trang profile) |
+| POST | `/sheets/:id/practice-sessions` | Bắt buộc | Lưu một lượt chơi |
 
 ---
 
@@ -110,7 +115,15 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
     "displayName": "Nguyen Van A",
     "role": "user",
     "isVerified": false,
-    "createdAt": "2026-11-05T07:00:00.000Z"
+    "createdAt": "2026-11-05T07:00:00.000Z",
+    "bio": null,
+    "city": null,
+    "country": null,
+    "instagram": null,
+    "level": null,
+    "favoriteGenres": [],
+    "favoriteArtists": [],
+    "showPracticeStats": true
   }
 }
 ```
@@ -134,6 +147,36 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 **Thành công: `200`**, cùng dạng với response của đăng ký.
 
 **Lỗi:** `400 INVALID_JSON`, `401 INVALID_CREDENTIALS`, `422 VALIDATION_FAILED`.
+
+---
+
+## Users
+
+### GET `/users/me`
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
+
+**Lỗi:** `401 UNAUTHORIZED`.
+
+### PUT `/users/profile`
+
+Chỉ nhận các trường dưới đây, trường khác bị bỏ qua. Trường không gửi thì giữ nguyên, chuỗi rỗng thì xoá giá trị.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- |
+| `displayName` | string | Có | Tối đa 100 ký tự |
+| `bio` | string | Không | Tối đa 160 ký tự |
+| `city` | string | Không | Tối đa 100 ký tự |
+| `country` | string | Không | Tối đa 100 ký tự |
+| `instagram` | string | Không | Tên tài khoản, chỉ chữ, số, `.`, `_`, tối đa 30 ký tự. Có thể gửi kèm `@` |
+| `level` | string | Không | `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `PROFESSIONAL` |
+| `favoriteGenres` | string[] | Không | Tối đa 10 mục, mỗi mục tối đa 50 ký tự |
+| `favoriteArtists` | string[] | Không | Tối đa 10 mục, mỗi mục tối đa 50 ký tự |
+| `showPracticeStats` | boolean | Không | |
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
 
 ---
 
@@ -277,6 +320,46 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
   ]
 }
 ```
+
+### GET `/sheets/liked`
+
+**Xác thực:** bắt buộc. Query và response giống `GET /sheets`, chỉ gồm các bài người dùng đang thích.
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### GET `/sheets/practice-history`
+
+**Xác thực:** bắt buộc. Lượt chơi mới nhất đứng đầu. Query `page`, `pageSize` giống `GET /sheets`.
+
+**Thành công: `200`**
+
+```json
+{
+  "data": [
+    { "id": 1, "sheetId": "fur-elise", "title": "Für Elise", "noteCount": 120, "durationSec": 95 }
+  ],
+  "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
+}
+```
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### POST `/sheets/:id/practice-sessions`
+
+**Xác thực:** bắt buộc.
+
+| Trường | Kiểu | Ràng buộc |
+| --- | --- | --- |
+| `noteCount` | integer | Số phím đã bấm, từ 5 đến 1000000. Dưới 5 phím không được lưu |
+| `durationSec` | integer | Thời lượng thực sự chơi tính bằng giây, từ 0 đến 86400 |
+
+**Thành công: `201`**
+
+```json
+{ "id": 1, "noteCount": 120, "durationSec": 95 }
+```
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`, `422 VALIDATION_FAILED`.
 
 ### GET `/sheets/:id`
 

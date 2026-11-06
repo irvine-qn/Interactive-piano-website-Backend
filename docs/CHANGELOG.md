@@ -18,6 +18,9 @@ Người dùng tải file MIDI lên thành bài nhạc chơi được ở Worksp
 - **Kiểm thử:** `npm test` (không cần DB) và `npm run uploads:smoke` (chạy với DB thật, tự dọn dữ liệu).
 
 **Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`.
+## 2026-11-06 – API người dùng (Quỳnh)
+
+- Thêm `GET /api/v1/users/me`, trả thông tin tài khoản đang đăng nhập. Không cần migration.
 
 ## 2026-11-05 – Hoá biểu, dấu nối và test
 

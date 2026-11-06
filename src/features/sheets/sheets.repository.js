@@ -36,15 +36,13 @@ const ORDER_BY = {
   title: { title: "asc" },
 };
 
-// Prisma đưa `contains` vào ILIKE mà không escape, nên "%" và "_" sẽ thành ký tự đại diện
 const escapeLike = (value) => value.replace(/[\\%_]/g, "\\$&");
-
-// Phạm vi danh sách (`scope`): mặc định Library = mọi bài PUBLIC.
-// Bài đã upload (U-BE-09): { uploaderId } (của tôi, cả PRIVATE) hoặc { uploaderId, visibility: "PUBLIC" } (của người khác).
 const LIBRARY_SCOPE = { visibility: "PUBLIC" };
 
-const buildWhere = ({ q, difficulty, tag }, scope = LIBRARY_SCOPE) => ({
-  ...scope,
+const buildWhere = ({ q, difficulty, tag, likedByUserId }, scope = LIBRARY_SCOPE) => ({
+  ...(likedByUserId
+    ? { likedBy: { some: { userId: likedByUserId } }, AND: [visibleTo(likedByUserId)] }
+    : scope),
   ...(q && {
     OR: [
       { title: { contains: escapeLike(q), mode: "insensitive" } },
@@ -68,8 +66,8 @@ const toSheet = ({ likedBy, uploader, ...sheet }, userId) => ({
   likedByMe: Boolean(likedBy?.length),
 });
 
-const findMany = async ({ q, difficulty, tag, sort, page, pageSize }, userId, scope = LIBRARY_SCOPE) => {
-  const where = buildWhere({ q, difficulty, tag }, scope);
+const findMany = async ({ q, difficulty, tag, likedByUserId, sort, page, pageSize }, userId, scope = LIBRARY_SCOPE) => {
+  const where = buildWhere({ q, difficulty, tag, likedByUserId }, scope);
   const [items, total] = await prisma.$transaction([
     prisma.sheet.findMany({
       where,
@@ -140,4 +138,52 @@ const toggleLike = (sheetId, userId) =>
     return { liked: true, likes };
   });
 
-module.exports = { SUMMARY_SELECT, visibleTo, toSheet, findMany, findById, countTags, incrementViews, toggleLike };
+const createPracticeSession = async (sheetId, userId, data) => {
+  const sheet = await prisma.sheet.findFirst({
+    where: { id: sheetId, ...visibleTo(userId) },
+    select: { id: true },
+  });
+  if (!sheet) return null;
+  return prisma.practiceSession.create({
+    data: { ...data, sheetId, userId },
+    select: { id: true, noteCount: true, durationSec: true },
+  });
+};
+
+const findPracticeHistory = async (userId, { page, pageSize }) => {
+  const where = { userId, sheet: visibleTo(userId) };
+  const [items, total] = await prisma.$transaction([
+    prisma.practiceSession.findMany({
+      where,
+      select: {
+        id: true,
+        sheetId: true,
+        noteCount: true,
+        durationSec: true,
+        sheet: { select: { title: true } },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.practiceSession.count({ where }),
+  ]);
+  return {
+    items: items.map(({ sheet, ...session }) => ({ ...session, title: sheet.title })),
+    total,
+  };
+};
+
+module.exports = {
+  SUMMARY_SELECT,
+  visibleTo,
+  toSheet,
+  findMany,
+  findById,
+  countTags,
+  incrementViews,
+  toggleLike,
+  createPracticeSession,
+  findPracticeHistory,
+};
+
