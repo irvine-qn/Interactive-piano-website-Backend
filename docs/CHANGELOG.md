@@ -5,6 +5,14 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-06 – Database cho bài upload (U-BE-04, Bình)
+
+- Migration `add_sheet_uploads`: `sheets` thêm `uploader_id` (FK `users`, null = bài mẫu) và `visibility` (`PUBLIC` | `PRIVATE`, bài cũ là PUBLIC); bảng mới `sheet_files` lưu file MIDI gốc. Chỉ thêm cột/bảng, không đổi dữ liệu cũ. API chưa đổi.
+- Thêm `src/lib/fileStorage.js` (`save`, `read`, `remove`) và biến `FILE_STORAGE` (mặc định `postgres`).
+- Model `User` chỉ thêm quan hệ `uploadedSheets` (không thêm cột vào bảng `users`).
+
+**Cần làm sau khi pull:** `npm run db:deploy` (hoặc `npm run db:migrate`), thêm `FILE_STORAGE=postgres` vào `.env` (không thêm cũng được, mặc định là `postgres`).
+
 ## 2026-11-06 – Engine MIDI chịu được file lạ (U-BE-02, Bình)
 
 - `midiToSheet.js` kiểm tra file (header `MThd`, file hỏng), giới hạn 20 000 nốt / 20 phút, chịu được track không có tên nhạc cụ. Lỗi là `ApiError` 422: `INVALID_MIDI`, `INVALID_TRACKS`, `NO_NOTES`, `MIDI_TOO_LARGE`.

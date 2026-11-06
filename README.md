@@ -63,7 +63,8 @@ piano-backend/
 │   │   └── sheets/
 │   │
 │   ├── lib/
-│   │   └── prisma.js
+│   │   ├── prisma.js
+│   │   └── fileStorage.js
 │   ├── types/
 │   ├── app.js
 │   └── server.js
@@ -112,6 +113,7 @@ piano-backend/
 | `src/data/sheets/`           | Sample sheet source data (MIDI, catalog, note JSON) loaded by `npm run db:seed` |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/lib/prisma.js`          | Shared Prisma client (connects through the `pg` driver adapter)    |
+| `src/lib/fileStorage.js`     | Saves original MIDI files of uploaded sheets (`FILE_STORAGE`, now PostgreSQL table `sheet_files`) |
 | `prisma/schema.prisma`       | Database models                                                    |
 | `prisma/migrations/`         | Migration history (one migration per schema change)                |
 | `prisma.config.js`           | Prisma CLI config (schema path, migrations path, `DATABASE_URL`)   |
@@ -201,9 +203,13 @@ DATABASE_URL=postgresql://fiano:fiano@localhost:5432/fiano?schema=public
 
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRES_IN=7d
+
+FILE_STORAGE=postgres
 ```
 
 > Do not commit `.env` to GitHub because it may contain sensitive information. Set `JWT_SECRET` to your own long random string (it signs login tokens).
+
+`FILE_STORAGE` chooses where original MIDI files of uploaded sheets are stored (`src/lib/fileStorage.js`). Only `postgres` (table `sheet_files`) exists for now; a cloud option will be added for deployment.
 
 If port `5432` is already used by another PostgreSQL on your machine, change `POSTGRES_PORT` and the port inside `DATABASE_URL` to the same free port (for example `5433`).
 

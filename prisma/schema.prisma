@@ -19,44 +19,73 @@ enum Difficulty {
   EXPERT
 }
 
+// Bài upload mặc định PRIVATE (chỉ người upload thấy), người dùng tự bật PUBLIC để hiện trong Library.
+// Bài mẫu (seed) là PUBLIC.
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
 model Sheet {
-  id            String     @id // slug, ví dụ "canon-in-d"
+  id            String      @id // slug, ví dụ "canon-in-d"
   title         String
   subtitle      String?
   composer      String
   difficulty    Difficulty
   tags          String[]
   bpm           Int
-  timeSignature Int[]      @map("time_signature") // [tử số, mẫu số], ví dụ [3, 4]
-  keySignature  String?    @map("key_signature") // ví dụ "D major"
-  durationSec   Int        @map("duration_sec")
-  noteCount     Int        @map("note_count")
-  views         Int        @default(0)
-  likes         Int        @default(0)
-  coverColor    String     @default("yellow") @map("cover_color") // yellow | pink | mint | lavender
+  timeSignature Int[]       @map("time_signature") // [tử số, mẫu số], ví dụ [3, 4]
+  keySignature  String?     @map("key_signature") // ví dụ "D major"
+  durationSec   Int         @map("duration_sec")
+  noteCount     Int         @map("note_count")
+  views         Int         @default(0)
+  likes         Int         @default(0)
+  coverColor    String      @default("yellow") @map("cover_color") // yellow | pink | mint | lavender
   // Mảng nốt [{ midi, name, time, duration, velocity, hand }]. Chỉ lấy khi xem chi tiết, không lấy ở danh sách.
   notes         Json
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
   likedBy       SheetLike[]
-  // uploaderId sẽ thêm bằng migration riêng khi có bảng users (Feature Auth/User)
+  // ===== Feature: User upload sheet =====
+  // null = bài mẫu (seed). Xoá tài khoản thì bài vẫn còn, chỉ mất thông tin người upload.
+  uploaderId    Int?        @map("uploader_id")
+  uploader      User?       @relation("UploadedSheets", fields: [uploaderId], references: [id], onDelete: SetNull)
+  visibility    Visibility  @default(PUBLIC)
+  file          SheetFile?
 
+  @@index([uploaderId])
   @@map("sheets")
+}
+
+// File MIDI gốc của bài upload, để chuyển lại khi engine tốt hơn / chọn lại track / tải lại file.
+// Bảng riêng để truy vấn danh sách bài không đọc kèm file. Chỉ đọc/ghi qua src/lib/fileStorage.js
+// (local lưu ở đây; khi deploy chuyển sang Cloud, xem WBS U-BE-12).
+model SheetFile {
+  sheetId      String   @id @map("sheet_id")
+  sheet        Sheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  data         Bytes
+  originalName String   @map("original_name") @db.VarChar(255)
+  size         Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("sheet_files")
 }
 
 // ===== Feature: Auth =====
 // Khớp đúng bảng `users` mà Auth tạo trước đây bằng SQL (độ dài theo auth.constants.js)
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique @db.VarChar(50)
-  email        String   @unique @db.VarChar(255)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  displayName  String?  @map("display_name") @db.VarChar(100)
-  role         String   @default("user") @db.VarChar(20)
-  isVerified   Boolean  @default(false) @map("is_verified")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  likedSheets  SheetLike[]
+  id             Int         @id @default(autoincrement())
+  username       String      @unique @db.VarChar(50)
+  email          String      @unique @db.VarChar(255)
+  passwordHash   String      @map("password_hash") @db.VarChar(255)
+  displayName    String?     @map("display_name") @db.VarChar(100)
+  role           String      @default("user") @db.VarChar(20)
+  isVerified     Boolean     @default(false) @map("is_verified")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  likedSheets    SheetLike[]
+  // Quan hệ ngược của sheets.uploader_id (Feature User upload sheet), không thêm cột vào bảng users
+  uploadedSheets Sheet[]     @relation("UploadedSheets")
 
   @@map("users")
 }

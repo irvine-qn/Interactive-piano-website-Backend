@@ -61,7 +61,9 @@ Trước đây sheet là file JSON đọc trực tiếp. Bây giờ bảng `shee
 - Đổi `schema.prisma` thì tạo migration mới: `npm run db:migrate -- --name <ten_thay_doi>`, rồi commit cả thư mục migration.
 - Prisma 7 **không tự chạy `prisma generate`** sau `migrate dev`, và **không tự seed** sau `migrate reset`. Repo đã có `postdb:migrate`/`postdb:deploy` để tự generate; sau `migrate reset` nhớ chạy `npm run db:seed`.
 - Gặp lời nhắc reset kèm *All data will be lost*: **không đồng ý**. Hầu hết trường hợp dùng `npm run db:deploy` hoặc `npx prisma migrate resolve --applied <tên_migration>` là đủ (README 6.3).
-- Khoá chính `users.id` là số tự tăng (`SERIAL`), còn `sheets.id` là slug chữ (`fur-elise`). Khi Feature User thêm `sheets.uploaderId`, khoá ngoại phải là `Int` trỏ tới `users.id`.
+- Khoá chính `users.id` là số tự tăng (`SERIAL`), còn `sheets.id` là slug chữ (`fur-elise`).
+- **Bài upload** (migration `add_sheet_uploads`): `sheets.uploader_id` → `users.id` (null = bài mẫu; xoá tài khoản thì bài còn, `uploader_id` về null), `sheets.visibility` `PUBLIC` | `PRIVATE` (bài mẫu PUBLIC, bài upload mặc định PRIVATE).
+- **File MIDI gốc** nằm ở bảng `sheet_files` (xoá bài thì xoá theo) và **chỉ đọc/ghi qua `src/lib/fileStorage.js`** (`save`, `read`, `remove`), không gọi `prisma.sheetFile` trực tiếp: khi deploy sẽ chuyển sang Cloud bằng biến `FILE_STORAGE`. Cần lưu cùng transaction với bài thì truyền `{ db: tx }`.
 
 ## 3. Dữ liệu bài nhạc (`sheets.notes`) – FE phụ thuộc vào định dạng này
 
