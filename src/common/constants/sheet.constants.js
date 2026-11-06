@@ -3,6 +3,11 @@ const DIFFICULTIES = ["EASY", "MEDIUM", "HARD", "EXPERT"];
 const SORT_OPTIONS = ["popular", "likes", "newest", "title"];
 const DEFAULT_SORT = "popular";
 const MAX_PAGE_SIZE = 50;
+// Bài upload (POST /sheets). Giới hạn phải khớp FE: features/upload/config/upload.js
+const COVER_COLORS = ["yellow", "pink", "mint", "lavender"];
+const VISIBILITIES = ["PUBLIC", "PRIVATE"];
+const SHEET_FIELD_LIMITS = { title: 100, composer: 100, tags: 3, tag: 30 };
+const UNKNOWN_COMPOSER = "Unknown";
 
 const CHROMATIC_NOTES = [
   { letter: "C" },
@@ -65,6 +70,10 @@ module.exports = {
   SORT_OPTIONS,
   DEFAULT_SORT,
   MAX_PAGE_SIZE,
+  COVER_COLORS,
+  VISIBILITIES,
+  SHEET_FIELD_LIMITS,
+  UNKNOWN_COMPOSER,
   CHROMATIC_NOTES,
   KEY_SIGNATURES,
   NATURAL_PITCH_CLASSES,

@@ -1,5 +1,9 @@
 const { parseMidi, isPianoTrack, describeTracks, pickDefaultTracks, convertMidi } = require("./midiToSheet");
 const { suggestTitle, estimateDifficulty } = require("./sheetSuggestions");
+const { toSlug, pickFreeId } = require("./sheetId");
+const uploadsRepository = require("./uploads.repository");
+const sheetsRepository = require("../sheets/sheets.repository");
+const ApiError = require("../../common/exceptions/ApiError");
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const midiToName = (midi) => (midi === null ? null : `${NOTE_NAMES[midi % 12]}${Math.floor(midi / 12) - 1}`);
@@ -59,4 +63,50 @@ const analyzeMidi = ({ buffer, originalname }, { tracks } = {}) => {
   };
 };
 
-module.exports = { analyzeMidi };
+// Tag trùng tag đã có (không phân biệt hoa thường) -> dùng cách viết đã có, để lọc tag ở Library
+// (phân biệt hoa thường) không bị tách "pop" / "Pop". FE cũng làm vậy, BE làm lại cho chắc.
+const matchKnownTags = async (tags) => {
+  if (!tags.length) return tags;
+  const known = await sheetsRepository.countTags();
+  return tags.map((tag) => known.find((item) => item.name.toLowerCase() === tag.toLowerCase())?.name ?? tag);
+};
+
+const MAX_ID_ATTEMPTS = 5;
+
+// Bước 2 của upload: chuyển file theo track người dùng đã chọn, lưu bài + file gốc.
+// `file`: req.file (đã kiểm tra ở receiveMidiFile); `fields`: kết quả parseSheetFields.
+const createSheet = async (file, fields, userId) => {
+  const { tracks, tags, ...details } = fields;
+  const midi = parseMidi(file.buffer);
+  const { metadata, notes } = convertMidi(midi, { tracks: tracks ?? pickDefaultTracks(describeTracks(midi)) });
+  const songEnd = notes.reduce((max, n) => Math.max(max, n.time + n.duration), 0);
+
+  const data = {
+    ...details,
+    tags: await matchKnownTags(tags),
+    bpm: metadata.bpm,
+    timeSignature: metadata.timeSignature,
+    keySignature: metadata.keySignature,
+    durationSec: Math.ceil(songEnd),
+    noteCount: notes.length,
+    uploaderId: userId,
+    notes,
+  };
+
+  // 2 người cùng upload 1 tên bài: người sau gặp P2002 thì chọn lại id
+  const base = toSlug(details.title);
+  for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt += 1) {
+    const id = pickFreeId(base, await uploadsRepository.findIdsStartingWith(base));
+    try {
+      return { ...(await uploadsRepository.createSheet({ id, ...data }, file)), likedByMe: false };
+    } catch (error) {
+      if (error.code === "P2002") continue;
+      // Token hợp lệ nhưng tài khoản đã bị xoá (uploaderId không còn trong users)
+      if (error.code === "P2003") throw new ApiError(401, "UNAUTHORIZED", "Please log in to continue");
+      throw error;
+    }
+  }
+  throw new ApiError(409, "SHEET_ID_TAKEN", "Could not save the sheet right now. Please try again.");
+};
+
+module.exports = { analyzeMidi, createSheet };

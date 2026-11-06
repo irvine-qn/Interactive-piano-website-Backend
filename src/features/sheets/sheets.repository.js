@@ -119,4 +119,4 @@ const toggleLike = (sheetId, userId) =>
     return { liked: true, likes };
   });
 
-module.exports = { findMany, findById, countTags, incrementViews, toggleLike };
+module.exports = { SUMMARY_SELECT, findMany, findById, countTags, incrementViews, toggleLike };

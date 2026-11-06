@@ -76,6 +76,8 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - Sửa engine `src/features/uploads/midiToSheet.js` thì chạy `npm test`: test so **từng nốt** của 9 bài mẫu với JSON đã lưu. Cố ý đổi bài mẫu thì chạy lại `npm run sheets:build` + `npm run db:seed`.
 - Engine và route upload nhận file của người dùng: **không tin dữ liệu vào**. Câu lỗi (`ApiError`) hiện thẳng lên giao diện nên viết tiếng Anh dễ hiểu. Mã lỗi: `docs/api.md`.
 - Route upload: `receiveMidiFile` đặt **sau** `requireAuth`. Trường chữ của form trong `req.body` luôn là chuỗi (nhiều trường cùng tên thành mảng), phải tự kiểm tra kiểu.
+- Id bài upload tạo ở `src/features/uploads/sheetId.js` (`toSlug`) **phải giống `toSlug` của FE** (`features/upload/utils/sheetDetails.js`): bìa vẽ theo id, Preview ở `/upload` đoán id theo cách này. Thêm route cố định mới dưới `/sheets/<chữ>` thì thêm `<chữ>` vào `RESERVED_IDS`, nếu không bài cùng tên sẽ không mở được.
+- Seed bỏ qua id đã thuộc về bài người dùng upload. Thêm bài mẫu mới thì kiểm tra log seed.
 - Gợi ý track (`pickDefaultTracks`) chỉ đúng 8/9 bài mẫu: luôn để người dùng xác nhận track, đừng tự lưu theo gợi ý.
 
 ## 4. Lỗi dễ gặp khi chạy local

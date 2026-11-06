@@ -128,3 +128,27 @@ test("file lỗi trả đúng mã lỗi", async () => {
   const text = await analyze(Buffer.from("hello"), "notes.txt");
   assert.deepEqual([text.status, text.body.error.code], [415, "UNSUPPORTED_FILE"]);
 });
+
+// POST /sheets: chỉ thử các lỗi trả về trước khi chạm database (tạo bài thật: uploads.service.test.js + thử tay với DB)
+const postSheet = async (fields, { auth = true } = {}) => {
+  const form = new FormData();
+  form.append("file", new Blob([sample("fur-elise.mid")]), "fur-elise.mid");
+  Object.entries(fields).forEach(([key, value]) => [].concat(value).forEach((item) => form.append(key, item)));
+  const res = await fetch(url.replace("/uploads/midi/analyze", "/sheets"), {
+    method: "POST",
+    body: form,
+    headers: auth ? { Authorization: `Bearer ${token}` } : {},
+  });
+  return { status: res.status, body: await res.json() };
+};
+
+test("POST /sheets: chưa đăng nhập 401, thông tin sai 422 kèm details.field", async () => {
+  const anonymous = await postSheet({ title: "A", difficulty: "EASY" }, { auth: false });
+  assert.deepEqual([anonymous.status, anonymous.body.error.code], [401, "UNAUTHORIZED"]);
+
+  const noTitle = await postSheet({ difficulty: "EASY" });
+  assert.deepEqual([noTitle.status, noTitle.body.error], [422, { code: "VALIDATION_FAILED", message: "Give your sheet a title.", details: { field: "title" } }]);
+
+  const tooManyTags = await postSheet({ title: "A", difficulty: "EASY", tags: ["a", "b", "c", "d"] });
+  assert.deepEqual([tooManyTags.status, tooManyTags.body.error.details], [422, { field: "tags" }]);
+});

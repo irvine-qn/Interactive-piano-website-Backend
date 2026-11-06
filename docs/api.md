@@ -44,9 +44,10 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại |
 | 409 | `USERNAME_TAKEN` | Username đã được dùng |
 | 409 | `EMAIL_TAKEN` | Email đã được dùng |
+| 409 | `SHEET_ID_TAKEN` | Không tạo được id cho bài (rất hiếm, nhiều người cùng tạo bài cùng tên), gửi lại là được |
 | 413 | `FILE_TOO_LARGE` | File upload lớn hơn 1 MB |
 | 415 | `UNSUPPORTED_FILE` | File upload không phải MIDI (sai đuôi hoặc không bắt đầu bằng `MThd`) |
-| 422 | `VALIDATION_FAILED` | Dữ liệu gửi lên không hợp lệ |
+| 422 | `VALIDATION_FAILED` | Dữ liệu gửi lên không hợp lệ. Ở `POST /sheets` có `details.field` là tên trường bị lỗi |
 | 422 | `INVALID_MIDI` | File MIDI hỏng, không đọc được |
 | 422 | `INVALID_TRACKS` | Danh sách track sai định dạng, hoặc track không tồn tại / không có nốt |
 | 422 | `NO_NOTES` | Các track đã chọn không có nốt nào trong 88 phím |
@@ -68,6 +69,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | POST | `/sheets/:id/view` | Không | Tăng lượt xem |
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
 | POST | `/uploads/midi/analyze` | Bắt buộc | Phân tích file MIDI trước khi tạo bài (không lưu gì) |
+| POST | `/sheets` | Bắt buộc | Tạo bài từ file MIDI |
 
 ---
 
@@ -391,7 +393,7 @@ Tăng lượt xem thêm 1. Không cần body.
 
 ## Uploads
 
-Upload bài là 2 bước: phân tích file (`/uploads/midi/analyze`, không lưu gì) để người dùng xem và sửa lựa chọn track, rồi tạo bài (sắp có). Gửi file bằng `multipart/form-data`, trường `file`, đuôi `.mid`/`.midi`, tối đa 1 MB.
+Upload bài là 2 bước: phân tích file (`/uploads/midi/analyze`, không lưu gì) để người dùng xem và sửa lựa chọn track, rồi tạo bài (`POST /sheets`, gửi lại file cùng thông tin bài). Gửi file bằng `multipart/form-data`, trường `file`, đuôi `.mid`/`.midi`, tối đa 1 MB.
 
 ### POST `/uploads/midi/analyze`
 
@@ -442,3 +444,49 @@ Upload bài là 2 bước: phân tích file (`/uploads/midi/analyze`, không lư
 - `warnings`: `[{ code, count, message }]`, `message` hiện thẳng lên giao diện. Mã: `OUT_OF_RANGE_NOTES` (nốt ngoài 88 phím bị bỏ), `ZERO_LENGTH_NOTES` (nốt dài 0 giây được kéo thành 50 ms), `TEMPO_CHANGES` (bài đổi tempo, bản nhạc có thể lệch ô nhịp), `NO_PIANO_TRACK` (không có track piano, đang gợi ý nhạc cụ khác).
 
 **Lỗi:** `401 UNAUTHORIZED`, `400 FILE_REQUIRED` / `UNEXPECTED_FILE` / `INVALID_UPLOAD`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE`, `422 INVALID_MIDI` / `INVALID_TRACKS` / `NO_NOTES` / `MIDI_TOO_LARGE`.
+
+### POST `/sheets`
+
+**Xác thực:** bắt buộc. Người gửi là người upload (`uploaderId`).
+
+**Form:**
+
+| Trường | Bắt buộc | Mô tả |
+| --- | --- | --- |
+| `file` | Có | File MIDI (như ở analyze) |
+| `title` | Có | 1-100 ký tự (khoảng trắng thừa được gộp) |
+| `composer` | Không | Tối đa 100 ký tự. Trống thì là `Unknown` |
+| `difficulty` | Có | `EASY` / `MEDIUM` / `HARD` / `EXPERT` |
+| `tags` | Không | Tối đa 3 tag, mỗi tag 1-30 ký tự, gửi nhiều trường `tags`. Trùng (không phân biệt hoa thường) thì bỏ; trùng tag đã có trong Library thì dùng cách viết đã có (`pop` thành `Pop`) |
+| `coverColor` | Không | `yellow` / `pink` / `mint` / `lavender`. Không gửi thì chọn ngẫu nhiên |
+| `visibility` | Không | `PUBLIC` / `PRIVATE`, mặc định `PRIVATE` |
+| `tracks` | Không | Track đã chọn (như ở analyze). Không gửi thì dùng track gợi ý |
+
+Bài và file gốc được lưu cùng lúc (lỗi thì không lưu gì). `id` tạo từ `title`: bỏ dấu tiếng Việt, ký tự khác chữ / số thành `-`, không còn chữ / số nào thì là `untitled`; trùng thì thêm `-2`, `-3` (`fur-elise-2`). Riêng `tags` đổi thành `tags-2` vì trùng đường dẫn `/sheets/tags`.
+
+**Thành công: `201`**, đối tượng Sheet (như ở danh sách) kèm `visibility`, `uploaderId`:
+
+```json
+{
+  "id": "fur-elise-2",
+  "title": "Für Elise",
+  "subtitle": null,
+  "composer": "Ludwig van Beethoven",
+  "difficulty": "EASY",
+  "tags": ["Classical"],
+  "bpm": 120,
+  "timeSignature": [3, 4],
+  "keySignature": "C major",
+  "durationSec": 33,
+  "noteCount": 104,
+  "views": 0,
+  "likes": 0,
+  "coverColor": "mint",
+  "createdAt": "2026-11-06T13:00:00.000Z",
+  "visibility": "PUBLIC",
+  "uploaderId": 3,
+  "likedByMe": false
+}
+```
+
+**Lỗi:** như analyze, thêm `422 VALIDATION_FAILED` (vd `{ "code": "VALIDATION_FAILED", "message": "Give your sheet a title.", "details": { "field": "title" } }`; `message` hiện thẳng lên giao diện) và `409 SHEET_ID_TAKEN`.

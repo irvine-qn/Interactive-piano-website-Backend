@@ -47,8 +47,10 @@ piano-backend/
 │   │   │   └── users.repository.js
 │   │   ├── uploads/
 │   │   │   ├── midiToSheet.js
+│   │   │   ├── sheetId.js
 │   │   │   ├── sheetSuggestions.js
 │   │   │   ├── uploads.controller.js
+│   │   │   ├── uploads.repository.js
 │   │   │   ├── uploads.routes.js
 │   │   │   ├── uploads.schema.js
 │   │   │   └── uploads.service.js
@@ -267,7 +269,7 @@ npm run db:seed
 1. Put the `.mid` file in `src/data/sheets/midi/`.
 2. Check its tracks: `node scripts/midi-to-sheet.mjs src/data/sheets/midi/<file>.mid --inspect`.
 3. Add an entry to `src/data/sheets/catalog.json` (with the piano `tracks` to use).
-4. Run `npm run sheets:build`, then `npm run db:seed`.
+4. Run `npm run sheets:build`, then `npm run db:seed`. The seed skips (with a warning) an id that already belongs to a sheet uploaded by a user: pick another id.
 
 Use the shared client in code:
 
@@ -592,6 +594,10 @@ Feature: `src/features/uploads/` (routes → controller → schema → service).
 
 Requires a token. Send `multipart/form-data` with `file` (a `.mid`/`.midi` file, at most 1 MB) and optionally `tracks` (for example `0,1`). Reads the file and returns the tracks with a suggested selection, a suggested title (from the file name), a suggested difficulty, BPM, time and key signature, duration, note count and warnings. **Nothing is saved**: call it again with `tracks` when the user changes the selection.
 
+### POST `/api/v1/sheets`
+
+Requires a token. Creates a sheet from a MIDI file: send `file` again with `title`, `difficulty` and optionally `composer`, `tags` (up to 3), `coverColor`, `visibility` (`PRIVATE` by default) and `tracks`. The sheet and the original file are saved in one transaction, the id is built from the title (`fur-elise`, `fur-elise-2`...). Returns `201` with the sheet summary. Invalid fields return `422 VALIDATION_FAILED` with `details.field`.
+
 ### Errors
 
 All errors use `{ "error": { "code", "message", "details?" } }`:
@@ -605,6 +611,7 @@ All errors use `{ "error": { "code", "message", "details?" } }`:
 | 404 | `SHEET_NOT_FOUND` | Sheet id does not exist |
 | 404 | `NOT_FOUND` | Route does not exist (also wrong HTTP method) |
 | 409 | `USERNAME_TAKEN` / `EMAIL_TAKEN` | Register with an existing username / email |
+| 409 | `SHEET_ID_TAKEN` | Could not pick a free id for a new sheet (many uploads with the same title at once), retry |
 | 413 | `FILE_TOO_LARGE` | Uploaded file is larger than 1 MB |
 | 415 | `UNSUPPORTED_FILE` | Uploaded file is not a MIDI file |
 | 422 | `VALIDATION_FAILED` | Invalid query parameter or request body |
