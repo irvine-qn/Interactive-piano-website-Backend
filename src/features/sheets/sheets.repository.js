@@ -29,7 +29,8 @@ const ORDER_BY = {
 // Prisma đưa `contains` vào ILIKE mà không escape, nên "%" và "_" sẽ thành ký tự đại diện
 const escapeLike = (value) => value.replace(/[\\%_]/g, "\\$&");
 
-const buildWhere = ({ q, difficulty, tag }) => ({
+const buildWhere = ({ q, difficulty, tag, likedByUserId }) => ({
+  ...(likedByUserId && { likedBy: { some: { userId: likedByUserId } } }),
   ...(q && {
     OR: [
       { title: { contains: escapeLike(q), mode: "insensitive" } },
@@ -47,8 +48,8 @@ const withLikedByMe = (userId) => ({
 
 const toSheet = ({ likedBy, ...sheet }) => ({ ...sheet, likedByMe: Boolean(likedBy?.length) });
 
-const findMany = async ({ q, difficulty, tag, sort, page, pageSize }, userId) => {
-  const where = buildWhere({ q, difficulty, tag });
+const findMany = async ({ q, difficulty, tag, likedByUserId, sort, page, pageSize }, userId) => {
+  const where = buildWhere({ q, difficulty, tag, likedByUserId });
   const [items, total] = await prisma.$transaction([
     prisma.sheet.findMany({
       where,

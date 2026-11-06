@@ -6,6 +6,10 @@ const getSheets = async (req, res) => {
   res.json(await sheetsService.listSheets(parseListQuery(req.query), req.userId));
 };
 
+const getLikedSheets = async (req, res) => {
+  res.json(await sheetsService.listLikedSheets(parseListQuery(req.query), req.userId));
+};
+
 const getSheet = async (req, res) => {
   res.json(await sheetsService.getSheetById(req.params.id, req.userId));
 };
@@ -26,4 +30,4 @@ const postLike = async (req, res) => {
   res.json(await sheetsService.toggleLike(req.params.id, req.userId));
 };
 
-module.exports = { getSheets, getSheet, getScore, getTags, postView, postLike };
+module.exports = { getSheets, getLikedSheets, getSheet, getScore, getTags, postView, postLike };

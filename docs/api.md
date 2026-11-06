@@ -55,6 +55,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | GET | `/frequencies` | Không | Tần số theo tên nốt |
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
 | GET | `/sheets/tags` | Không | Danh sách thể loại |
+| GET | `/sheets/liked` | Bắt buộc | Danh sách bài người dùng đã thích |
 | GET | `/sheets/:id` | Tùy chọn | Chi tiết bài nhạc |
 | GET | `/sheets/:id/score` | Không | Bản nhạc đã chuyển sang vị trí trên khuông |
 | POST | `/sheets/:id/view` | Không | Tăng lượt xem |
@@ -265,6 +266,12 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
   ]
 }
 ```
+
+### GET `/sheets/liked`
+
+**Xác thực:** bắt buộc. Query và response giống `GET /sheets`, chỉ gồm các bài người dùng đang thích.
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
 
 ### GET `/sheets/:id`
 
