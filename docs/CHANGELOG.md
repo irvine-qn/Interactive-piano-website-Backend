@@ -5,45 +5,14 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
-## 2026-11-06 – API phân tích file MIDI (U-BE-06, Bình)
+## 2026-11-06 – Upload MIDI (Bình, đang làm)
 
-- `POST /api/v1/uploads/midi/analyze` (bắt buộc đăng nhập): đọc file, trả track + track gợi ý, tên bài gợi ý (từ tên file), độ khó gợi ý, BPM, nhịp, giọng, thời lượng, số nốt, cảnh báo. **Không lưu gì.** Gửi thêm `tracks` để tính lại theo track đang chọn. Chi tiết: `docs/api.md` › Uploads.
-- Feature mới `src/features/uploads/` (routes, controller, schema, service, `sheetSuggestions.js`).
+- Migration mới `add_sheet_uploads`: `sheets` thêm `uploader_id`, `visibility`; bảng mới `sheet_files`. Chỉ thêm cột/bảng, dữ liệu cũ giữ nguyên.
+- Thư viện mới `multer`. Biến môi trường mới `FILE_STORAGE` (mặc định `postgres`, không khai báo cũng được).
+- API mới `POST /api/v1/uploads/midi/analyze` (xem `docs/api.md` › Uploads).
+- Engine chuyển MIDI dời sang `src/features/uploads/midiToSheet.js`, xoá `src/data/sheets/convertMidi.mjs`. Sửa 1 nốt dài 0 giây của `chasing-kou`; `npm run sheets:build` chạy lại được.
 
-**Cần làm sau khi pull:** khởi động lại server.
-
-## 2026-11-06 – Nhận file upload (U-BE-05, Bình)
-
-- Thêm thư viện `multer` và middleware `src/common/middlewares/upload.middleware.js` (`receiveMidiFile`): nhận đúng 1 file MIDI ở trường `file` (≤ 1 MB, đuôi `.mid`/`.midi`, bắt đầu bằng `MThd`), giữ tên file tiếng Việt. Chưa gắn vào route nào (làm ở U-BE-06).
-- Lỗi: `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE`, `400 FILE_REQUIRED`, `400 UNEXPECTED_FILE`, `400 INVALID_UPLOAD`.
-
-**Cần làm sau khi pull:** `npm install`.
-
-## 2026-11-06 – Database cho bài upload (U-BE-04, Bình)
-
-- Migration `add_sheet_uploads`: `sheets` thêm `uploader_id` (FK `users`, null = bài mẫu) và `visibility` (`PUBLIC` | `PRIVATE`, bài cũ là PUBLIC); bảng mới `sheet_files` lưu file MIDI gốc. Chỉ thêm cột/bảng, không đổi dữ liệu cũ. API chưa đổi.
-- Thêm `src/lib/fileStorage.js` (`save`, `read`, `remove`) và biến `FILE_STORAGE` (mặc định `postgres`).
-- Model `User` chỉ thêm quan hệ `uploadedSheets` (không thêm cột vào bảng `users`).
-
-**Cần làm sau khi pull:** `npm run db:deploy` (hoặc `npm run db:migrate`), thêm `FILE_STORAGE=postgres` vào `.env` (không thêm cũng được, mặc định là `postgres`).
-
-## 2026-11-06 – Engine MIDI chịu được file lạ (U-BE-02, Bình)
-
-- `midiToSheet.js` kiểm tra file (header `MThd`, file hỏng), giới hạn 20 000 nốt / 20 phút, chịu được track không có tên nhạc cụ. Lỗi là `ApiError` 422: `INVALID_MIDI`, `INVALID_TRACKS`, `NO_NOTES`, `MIDI_TOO_LARGE`.
-- Gợi ý track tốt hơn: bỏ track quá nhỏ so với track chính (khớp 8/9 bài mẫu thay vì 7/9), không có track piano thì gợi ý mọi track không phải trống.
-- `convertMidi` trả thêm `warnings` (`OUT_OF_RANGE_NOTES`, `ZERO_LENGTH_NOTES`, `TEMPO_CHANGES`). Tool seed in cảnh báo ra màn hình, JSON chỉ lưu `metadata` + `notes`.
-- Nốt dài 0 giây được kéo thành 0.05 s. Sửa 1 nốt của `chasing-kou` (C#3 ở giây 88.7 trước đây không nhìn thấy trên waterfall).
-
-**Cần làm sau khi pull:** `npm run db:seed` (cập nhật `chasing-kou`, giữ nguyên lượt xem và lượt thích).
-
-## 2026-11-06 – Engine MIDI dùng chung (U-BE-01, Bình)
-
-- Lõi chuyển MIDI → nốt chuyển sang `src/features/uploads/midiToSheet.js` (CommonJS), dùng chung cho tool seed và Feature Upload sắp làm. `scripts/midi-to-sheet.mjs` chỉ còn phần đọc file và dòng lệnh. Kết quả 9 bài mẫu không đổi.
-- Sửa `npm run sheets:build` bị lỗi vì đường dẫn file MIDI của Merry Christmas trong `catalog.json` sai.
-- Xoá `src/data/sheets/convertMidi.mjs` (bản cũ, đã được thay hoàn toàn).
-- Thêm test hồi quy `midiToSheet.test.js` (chạy trong `npm test`).
-
-**Cần làm sau khi pull:** không cần lệnh gì thêm.
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`.
 
 ## 2026-11-05 – Hoá biểu, dấu nối và test
 

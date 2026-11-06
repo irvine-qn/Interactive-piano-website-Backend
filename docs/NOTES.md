@@ -62,8 +62,8 @@ Trước đây sheet là file JSON đọc trực tiếp. Bây giờ bảng `shee
 - Prisma 7 **không tự chạy `prisma generate`** sau `migrate dev`, và **không tự seed** sau `migrate reset`. Repo đã có `postdb:migrate`/`postdb:deploy` để tự generate; sau `migrate reset` nhớ chạy `npm run db:seed`.
 - Gặp lời nhắc reset kèm *All data will be lost*: **không đồng ý**. Hầu hết trường hợp dùng `npm run db:deploy` hoặc `npx prisma migrate resolve --applied <tên_migration>` là đủ (README 6.3).
 - Khoá chính `users.id` là số tự tăng (`SERIAL`), còn `sheets.id` là slug chữ (`fur-elise`).
-- **Bài upload** (migration `add_sheet_uploads`): `sheets.uploader_id` → `users.id` (null = bài mẫu; xoá tài khoản thì bài còn, `uploader_id` về null), `sheets.visibility` `PUBLIC` | `PRIVATE` (bài mẫu PUBLIC, bài upload mặc định PRIVATE).
-- **File MIDI gốc** nằm ở bảng `sheet_files` (xoá bài thì xoá theo) và **chỉ đọc/ghi qua `src/lib/fileStorage.js`** (`save`, `read`, `remove`), không gọi `prisma.sheetFile` trực tiếp: khi deploy sẽ chuyển sang Cloud bằng biến `FILE_STORAGE`. Cần lưu cùng transaction với bài thì truyền `{ db: tx }`.
+- File MIDI gốc của bài upload (`sheet_files`) **chỉ đọc/ghi qua `src/lib/fileStorage.js`**, không gọi `prisma.sheetFile` trực tiếp: khi deploy sẽ chuyển sang Cloud.
+- `sheets.visibility = PRIVATE` **chưa được lọc** ở các API sheet cho tới khi xong U-BE-08: đừng dựa vào nó để ẩn bài.
 
 ## 3. Dữ liệu bài nhạc (`sheets.notes`) – FE phụ thuộc vào định dạng này
 
@@ -73,21 +73,10 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - `hand` là `left` hoặc `right`. FE tô màu theo tay (phải cam, trái xanh dương).
 - Trường `bpm` của sheet **phải đúng BPM gốc**: Workspace dùng nó để đổi tốc độ phát (0.5x–1.5x) và hiển thị BPM thực tế. BPM sai thì BPM hiển thị cũng sai, còn tốc độ thì không bị ảnh hưởng.
 - Tên nốt dạng `C4`, `F#3` (dấu thăng `#`, không dùng giáng). FE tra phím theo tên này.
-- **Engine chuyển MIDI → nốt:** `src/features/uploads/midiToSheet.js` (chọn track, chia tay, khử nốt trùng, lọc 88 phím). Dùng chung cho tool seed (`scripts/midi-to-sheet.mjs`, `npm run sheets:build`) và Feature **Upload**. Tool seed chỉ đọc file và xử lý tham số dòng lệnh. Xem README › *Adding a new sample sheet*.
-- Engine dùng cho file người dùng tải lên nên **không tin dữ liệu vào**: kiểm tra header `MThd`, giới hạn 20 000 nốt / 20 phút, bỏ nốt ngoài 88 phím, kéo nốt dài 0 giây thành 0.05 s. Lỗi ném ra là `ApiError` 422 với mã `INVALID_MIDI` | `INVALID_TRACKS` | `NO_NOTES` | `MIDI_TOO_LARGE` và câu tiếng Anh (hiện thẳng lên giao diện). `convertMidi` trả `{ metadata, notes, warnings }`; `warnings` không lưu vào DB.
-- **Nhận file:** route upload dùng middleware `receiveMidiFile` (`src/common/middlewares/upload.middleware.js`, thư viện `multer`), đặt **sau** `requireAuth`. File nằm ở `req.file.buffer` (RAM, không ghi ra ổ đĩa), các trường chữ của form ở `req.body` (luôn là chuỗi, phải tự kiểm tra/chuyển kiểu). Middleware chỉ kiểm tra "có phải file MIDI không"; nội dung do engine kiểm tra. Mã lỗi:
-
-  | Lỗi | Khi nào |
-  | --- | --- |
-  | `400 FILE_REQUIRED` | Không gửi file |
-  | `400 UNEXPECTED_FILE` | Gửi nhiều file hoặc sai tên trường (phải là `file`) |
-  | `400 INVALID_UPLOAD` | Request multipart hỏng, quá nhiều trường |
-  | `413 FILE_TOO_LARGE` | File lớn hơn 1 MB |
-  | `415 UNSUPPORTED_FILE` | Sai đuôi (`.mid`/`.midi`) hoặc không bắt đầu bằng `MThd` |
-  | `422 INVALID_MIDI`, `MIDI_TOO_LARGE`, `NO_NOTES`, `INVALID_TRACKS` | Engine đọc nội dung file |
-
-- Gợi ý track (`pickDefaultTracks`) chỉ là gợi ý (khớp 8/9 bài mẫu so với chọn tay, sai ở `merry-christmas-mr-lawrence` vì track *music box* không thuộc họ piano), nên upload luôn cho người dùng xác nhận track.
-- Sửa engine thì chạy `npm test`: test `midiToSheet.test.js` chuyển lại 9 bài mẫu và so **từng nốt** với file JSON đã lưu, kết quả bài mẫu không được đổi (trừ khi cố ý, khi đó chạy lại `npm run sheets:build` + `npm run db:seed`).
+- Sửa engine `src/features/uploads/midiToSheet.js` thì chạy `npm test`: test so **từng nốt** của 9 bài mẫu với JSON đã lưu. Cố ý đổi bài mẫu thì chạy lại `npm run sheets:build` + `npm run db:seed`.
+- Engine và route upload nhận file của người dùng: **không tin dữ liệu vào**. Câu lỗi (`ApiError`) hiện thẳng lên giao diện nên viết tiếng Anh dễ hiểu. Mã lỗi: `docs/api.md`.
+- Route upload: `receiveMidiFile` đặt **sau** `requireAuth`. Trường chữ của form trong `req.body` luôn là chuỗi (nhiều trường cùng tên thành mảng), phải tự kiểm tra kiểu.
+- Gợi ý track (`pickDefaultTracks`) chỉ đúng 8/9 bài mẫu: luôn để người dùng xác nhận track, đừng tự lưu theo gợi ý.
 
 ## 4. Lỗi dễ gặp khi chạy local
 
