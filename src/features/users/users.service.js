@@ -10,4 +10,12 @@ const getMe = async (userId) => {
   return toPublicUser(user);
 };
 
-module.exports = { getMe };
+const updateProfile = async (userId, data) => {
+  const user = await usersRepository.updateProfile(userId, data);
+  if (!user) {
+    throw new ApiError(401, "UNAUTHORIZED", "Please log in to continue");
+  }
+  return toPublicUser(user);
+};
+
+module.exports = { getMe, updateProfile };

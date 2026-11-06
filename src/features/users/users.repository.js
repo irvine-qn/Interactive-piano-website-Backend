@@ -12,6 +12,14 @@ const toRow = (user) =>
     role: user.role,
     is_verified: user.isVerified,
     created_at: user.createdAt,
+    bio: user.bio,
+    city: user.city,
+    country: user.country,
+    instagram: user.instagram,
+    level: user.level,
+    favorite_genres: user.favoriteGenres,
+    favorite_artists: user.favoriteArtists,
+    show_practice_stats: user.showPracticeStats,
   };
 
 const findByUsernameOrEmail = async (username, email) => {
@@ -40,7 +48,17 @@ const createUser = async ({ displayName, username, email, passwordHash }) => {
   return toRow(user);
 };
 
+const updateProfile = async (id, data) => {
+  try {
+    return toRow(await prisma.user.update({ where: { id }, data }));
+  } catch (error) {
+    if (error.code === "P2025") return null;
+    throw error;
+  }
+};
+
 module.exports = {
+  updateProfile,
   findByUsernameOrEmail,
   findById,
   findByIdentifier,
