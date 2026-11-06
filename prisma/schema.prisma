@@ -56,6 +56,14 @@ model User {
   role         String   @default("user") @db.VarChar(20)
   isVerified   Boolean  @default(false) @map("is_verified")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  bio               String?  @db.VarChar(160)
+  city              String?  @db.VarChar(100)
+  country           String?  @db.VarChar(100)
+  instagram         String?  @db.VarChar(30)
+  level             String?  @db.VarChar(20)
+  favoriteGenres    String[] @default([]) @map("favorite_genres")
+  favoriteArtists   String[] @default([]) @map("favorite_artists")
+  showPracticeStats Boolean  @default(true) @map("show_practice_stats")
   likedSheets  SheetLike[]
 
   @@map("users")
