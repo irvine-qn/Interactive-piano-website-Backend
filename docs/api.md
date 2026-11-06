@@ -126,7 +126,9 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
     "level": null,
     "favoriteGenres": [],
     "favoriteArtists": [],
-    "showPracticeStats": true
+    "showPracticeStats": true,
+    "avatarUrl": null,
+    "backgroundUrl": null
   }
 }
 ```
@@ -180,6 +182,26 @@ Chỉ nhận các trường dưới đây, trường khác bị bỏ qua. Trư�
 **Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
 
 **Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### PUT `/users/profile/images/:kind`
+
+**Xác thực:** bắt buộc. `kind` là `avatar` hoặc `background`. Gửi `multipart/form-data`, ảnh ở trường `file`, tối đa 5 MB. Ảnh được đổi sang WebP: avatar cắt vuông 512×512, ảnh bìa rộng tối đa 1600px.
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký. `avatarUrl` / `backgroundUrl` là đường dẫn tương đối, vd `/api/v1/users/1/images/avatar?v=1793987459244`.
+
+**Lỗi:** `400 FILE_REQUIRED`, `400 INVALID_UPLOAD`, `401 UNAUTHORIZED`, `404 IMAGE_NOT_FOUND` (`kind` sai), `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_IMAGE`.
+
+### DELETE `/users/profile/images/:kind`
+
+**Xác thực:** bắt buộc. **Thành công: `200`**, trả về `user` với URL ảnh đó là `null`.
+
+**Lỗi:** `401 UNAUTHORIZED`, `404 IMAGE_NOT_FOUND` (`kind` sai).
+
+### GET `/users/:id/images/:kind`
+
+**Xác thực:** không. **Thành công: `200`**, nội dung là ảnh `image/webp`.
+
+**Lỗi:** `404 IMAGE_NOT_FOUND`.
 
 ---
 

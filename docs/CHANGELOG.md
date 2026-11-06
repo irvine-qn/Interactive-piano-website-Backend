@@ -5,11 +5,13 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
-## 2026-11-08 – Ảnh hồ sơ
+## 2026-11-07 – Ảnh hồ sơ, lịch sử chơi và dọn sau merge
 
-- Thêm API tải, xoá và lấy ảnh `avatar` / `background`, tạm lưu trong PostgreSQL (bảng `user_images`). User trả thêm `avatarUrl`, `backgroundUrl`.
+- **Ảnh hồ sơ:** thêm API tải, xoá và lấy ảnh `avatar` / `background`. Nhận file bằng `multer`, `sharp` kiểm tra và đổi sang WebP, tạm lưu trong PostgreSQL (bảng `user_images`, migration `add_user_images`). User trả thêm `avatarUrl`, `backgroundUrl`.
+- **Lịch sử chơi:** `GET /sheets/practice-history` trả thêm `composer`, `coverColor`.
+- **Migration lệch thứ tự:** sau khi gộp `upload-midi` và `profile`, máy đã chạy migration của `profile` có thể thiếu `add_sheet_uploads`, làm API sheet trả 500 (`P2022`, thiếu cột `sheets.visibility`). Chạy `npm run db:deploy`, **không** đồng ý nếu Prisma đòi reset.
 
-**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`.
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`, rồi khởi động lại server.
 
 ## 2026-11-06 – Upload MIDI (Bình)
 

@@ -103,7 +103,6 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 
 ## 6. Việc còn mở
 
-- **Upload MIDI**: Backend xong. Còn lưu file trên Cloud khi deploy (U-BE-12: thêm driver cho `fileStorage.js`, dùng chung dịch vụ với ảnh avatar của Quỳnh, cần thống nhất dịch vụ).
-- **User profile / edit profile** (Quỳnh): API thông tin người dùng, ảnh avatar. Danh sách bài của một người đã có sẵn (`GET /users/:id/sheets`).
-- **Danh sách bài của tôi trên giao diện** (*My uploads*: xem cả bài PRIVATE, sửa, xoá): API đã có, phần giao diện chờ thống nhất với trang profile của Quỳnh.
+- **Upload MIDI**: Backend xong. Còn lưu file trên Cloud khi deploy (U-BE-12: thêm driver cho `fileStorage.js`, dùng chung dịch vụ với ảnh hồ sơ, cần thống nhất dịch vụ).
+- **Ảnh hồ sơ:** đang tạm lưu trong PostgreSQL (`user_images`), client chỉ dùng URL. Khi deploy chuyển sang Cloud.
 - **Bài đã lưu của người dùng**: chưa phân công.

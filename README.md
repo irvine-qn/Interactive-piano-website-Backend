@@ -294,6 +294,8 @@ The `users` table used to be created by the server at startup (raw SQL). It is n
 
 Check with `npx prisma migrate status` → `Database schema is up to date!`. After that, `npm run db:migrate` works normally again.
 
+If `migrate status` lists a pending migration older than one already applied (this can happen after merging branches), run `npm run db:deploy`.
+
 ---
 
 # 7. Run the Backend
@@ -597,6 +599,16 @@ node scripts/auth-regression.mjs --compare baseline.json   # after the change
 ```
 
 Options: `--base http://localhost:5000`, `--existing <username>:<password>` (also check an account that already exists).
+
+## Profile images
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| PUT | `/api/v1/users/profile/images/:kind` | Required | Upload `avatar` or `background` (multipart field `file`, up to 5 MB) |
+| DELETE | `/api/v1/users/profile/images/:kind` | Required | Remove the image |
+| GET | `/api/v1/users/:id/images/:kind` | None | Read the image (`image/webp`) |
+
+Images are stored in PostgreSQL for now (`user_images`). Details: [`docs/api.md`](docs/api.md).
 
 ## Uploads
 
