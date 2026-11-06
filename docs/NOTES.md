@@ -13,7 +13,7 @@ Hướng dẫn cài đặt, chạy server và tài liệu API nằm ở [README]
 | --- | --- | --- |
 | Auth (`features/auth/*`: register, login, JWT) | **Quỳnh** | Bình **không sửa** logic Auth. Riêng `users.repository.js` đã được Bình chuyển sang Prisma (C-07C), giữ nguyên tên hàm và dạng dữ liệu trả về |
 | Cấu hình piano cho Home (`features/workspace/*`: `/api/v1/piano`, `/api/v1/frequencies`) | **Quỳnh** | Tên thư mục là `workspace` nhưng đây là API của **Home**, không phải trang Piano Workspace |
-| Sheets (`features/sheets/*`, `src/data/sheets/*`, `scripts/midi-to-sheet.mjs`, `scripts/build-sheets.mjs`) | **Bình** | Quỳnh **không sửa** |
+| Sheets (`features/sheets/*`, `src/data/sheets/*`, `scripts/midi-to-sheet.mjs`, `scripts/build-sheets.mjs`) và engine MIDI / upload (`features/uploads/*`) | **Bình** | Quỳnh **không sửa** |
 | Database: Docker, Prisma (`prisma/*`, `prisma.config.js`, `src/lib/prisma.js`), `scripts/auth-regression.mjs` | **Bình** | Thêm bảng mới thì tạo migration theo mục 2, báo cho người kia |
 | User profile + User edit profile (API đọc/sửa thông tin người dùng, ảnh avatar) | **Quỳnh** | Bình **không sửa** |
 | User upload sheet (API upload file MIDI, chuyển MIDI → `notes`, `sheets.uploaderId`) | **Bình** (sắp làm) | Quỳnh **không sửa**. Profile cần danh sách bài đã upload thì thống nhất API trước |
@@ -71,8 +71,8 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - `hand` là `left` hoặc `right`. FE tô màu theo tay (phải cam, trái xanh dương).
 - Trường `bpm` của sheet **phải đúng BPM gốc**: Workspace dùng nó để đổi tốc độ phát (0.5x–1.5x) và hiển thị BPM thực tế. BPM sai thì BPM hiển thị cũng sai, còn tốc độ thì không bị ảnh hưởng.
 - Tên nốt dạng `C4`, `F#3` (dấu thăng `#`, không dùng giáng). FE tra phím theo tên này.
-- Công cụ chuyển MIDI → JSON: `scripts/midi-to-sheet.mjs` (chọn track, chia tay). Xem README › *Adding a new sample sheet*.
-- Feature **Upload** sẽ chỉ nhận file MIDI và dùng lại logic của `scripts/midi-to-sheet.mjs` + `src/data/sheets/convertMidi.mjs`; kết quả phải đúng định dạng trên.
+- **Engine chuyển MIDI → nốt:** `src/features/uploads/midiToSheet.js` (chọn track, chia tay, khử nốt trùng, lọc 88 phím). Dùng chung cho tool seed (`scripts/midi-to-sheet.mjs`, `npm run sheets:build`) và Feature **Upload**. Tool seed chỉ đọc file và xử lý tham số dòng lệnh. Xem README › *Adding a new sample sheet*.
+- Sửa engine thì chạy `npm test`: test `midiToSheet.test.js` chuyển lại 9 bài mẫu và so **từng nốt** với file JSON đã lưu, kết quả bài mẫu không được đổi (trừ khi cố ý, khi đó chạy lại `npm run sheets:build` + `npm run db:seed`).
 
 ## 4. Lỗi dễ gặp khi chạy local
 

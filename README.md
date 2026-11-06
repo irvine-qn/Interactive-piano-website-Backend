@@ -45,6 +45,8 @@ piano-backend/
 │   │   │   └── auth.service.js
 │   │   ├── users/
 │   │   │   └── users.repository.js
+│   │   ├── uploads/
+│   │   │   └── midiToSheet.js
 │   │   ├── collections/
 │   │   ├── workspace/
 │   │   │   ├── workspace.controller.js
@@ -72,7 +74,7 @@ piano-backend/
 │   └── migrations/
 │
 ├── scripts/
-│   ├── midi-to-sheet.mjs       # MIDI -> sheet JSON (seed data)
+│   ├── midi-to-sheet.mjs       # MIDI -> sheet JSON (seed data), uses src/features/uploads/midiToSheet.js
 │   ├── build-sheets.mjs        # npm run sheets:build
 │   └── auth-regression.mjs     # Auth API regression test (record/compare)
 │
@@ -106,6 +108,7 @@ piano-backend/
 | `src/features/sheets/`       | Sheet data for the Library and Workspace pages (`/api/v1/sheets`)  |
 | `src/features/auth/`         | Register / login, password hashing, JWT (`/api/v1/auth`)           |
 | `src/features/users/`        | `users` table access through Prisma (`users.repository.js`)        |
+| `src/features/uploads/`      | MIDI to sheet engine (`midiToSheet.js`), shared by the seed tool and the upload feature |
 | `src/data/sheets/`           | Sample sheet source data (MIDI, catalog, note JSON) loaded by `npm run db:seed` |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/lib/prisma.js`          | Shared Prisma client (connects through the `pg` driver adapter)    |

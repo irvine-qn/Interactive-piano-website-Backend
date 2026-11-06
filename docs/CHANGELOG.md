@@ -5,6 +5,15 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-06 – Engine MIDI dùng chung (U-BE-01, Bình)
+
+- Lõi chuyển MIDI → nốt chuyển sang `src/features/uploads/midiToSheet.js` (CommonJS), dùng chung cho tool seed và Feature Upload sắp làm. `scripts/midi-to-sheet.mjs` chỉ còn phần đọc file và dòng lệnh. Kết quả 9 bài mẫu không đổi.
+- Sửa `npm run sheets:build` bị lỗi vì đường dẫn file MIDI của Merry Christmas trong `catalog.json` sai.
+- Xoá `src/data/sheets/convertMidi.mjs` (bản cũ, đã được thay hoàn toàn).
+- Thêm test hồi quy `midiToSheet.test.js` (chạy trong `npm test`).
+
+**Cần làm sau khi pull:** không cần lệnh gì thêm.
+
 ## 2026-11-05 – Hoá biểu, dấu nối và test
 
 - `/sheets/:id/score` trả thêm `keySignature` và `tieToNext`. `accidental` có thể là `#`, `b`, `n` hoặc `null`.
