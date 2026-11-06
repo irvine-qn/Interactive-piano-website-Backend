@@ -51,6 +51,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | POST | `/auth/register` | Không | Đăng ký |
 | POST | `/auth/login` | Không | Đăng nhập |
 | GET | `/users/me` | Bắt buộc | Thông tin tài khoản đang đăng nhập |
+| PUT | `/users/profile` | Bắt buộc | Cập nhật hồ sơ |
 | GET | `/piano` | Không | Cấu hình đàn và bảng phím |
 | GET | `/frequencies` | Không | Tần số theo tên nốt |
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
@@ -95,7 +96,15 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
     "displayName": "Nguyen Van A",
     "role": "user",
     "isVerified": false,
-    "createdAt": "2026-11-05T07:00:00.000Z"
+    "createdAt": "2026-11-05T07:00:00.000Z",
+    "bio": null,
+    "city": null,
+    "country": null,
+    "instagram": null,
+    "level": null,
+    "favoriteGenres": [],
+    "favoriteArtists": [],
+    "showPracticeStats": true
   }
 }
 ```
@@ -129,6 +138,26 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 **Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
 
 **Lỗi:** `401 UNAUTHORIZED`.
+
+### PUT `/users/profile`
+
+Chỉ nhận các trường dưới đây, trường khác bị bỏ qua. Trường không gửi thì giữ nguyên, chuỗi rỗng thì xoá giá trị.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- |
+| `displayName` | string | Có | Tối đa 100 ký tự |
+| `bio` | string | Không | Tối đa 160 ký tự |
+| `city` | string | Không | Tối đa 100 ký tự |
+| `country` | string | Không | Tối đa 100 ký tự |
+| `instagram` | string | Không | Tên tài khoản, chỉ chữ, số, `.`, `_`, tối đa 30 ký tự. Có thể gửi kèm `@` |
+| `level` | string | Không | `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `PROFESSIONAL` |
+| `favoriteGenres` | string[] | Không | Tối đa 10 mục, mỗi mục tối đa 50 ký tự |
+| `favoriteArtists` | string[] | Không | Tối đa 10 mục, mỗi mục tối đa 50 ký tự |
+| `showPracticeStats` | boolean | Không | |
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
 
 ---
 
