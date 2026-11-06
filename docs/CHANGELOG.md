@@ -5,15 +5,17 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
-## 2026-11-06 – Upload MIDI (Bình, đang làm)
+## 2026-11-06 – Upload MIDI (Bình)
 
-- Migration mới `add_sheet_uploads`: `sheets` thêm `uploader_id`, `visibility`; bảng mới `sheet_files`. Chỉ thêm cột/bảng, dữ liệu cũ giữ nguyên.
-- Thư viện mới `multer`. Biến môi trường mới `FILE_STORAGE` (mặc định `postgres`, không khai báo cũng được).
-- API mới `POST /api/v1/uploads/midi/analyze` và `POST /api/v1/sheets` (tạo bài từ file MIDI), xem `docs/api.md` › Uploads.
-- Bài `PRIVATE` chỉ người upload xem được: không có trong `GET /sheets`, `/sheets/tags`; người khác mở thì `404`. Sheet trả thêm `visibility`, `uploaderId`, `uploader`, `isMine`.
-- API mới `GET /api/v1/users/me/sheets` (bài tôi đã upload) và `GET /api/v1/users/:id/sheets` (bài PUBLIC của một người, cho trang profile).
-- API mới `PATCH /api/v1/sheets/:id` (sửa thông tin bài) và `DELETE /api/v1/sheets/:id` (xoá bài), chỉ người upload.
-- Engine chuyển MIDI dời sang `src/features/uploads/midiToSheet.js`, xoá `src/data/sheets/convertMidi.mjs`. Sửa 1 nốt dài 0 giây của `chasing-kou`; `npm run sheets:build` chạy lại được.
+Người dùng tải file MIDI lên thành bài nhạc chơi được ở Workspace. Phần Backend đã xong, trừ lưu file trên Cloud (làm khi deploy).
+
+- **Database:** migration `add_sheet_uploads` (`sheets` thêm `uploader_id`, `visibility`; bảng mới `sheet_files` chứa file MIDI gốc). Chỉ thêm cột / bảng, dữ liệu cũ giữ nguyên.
+- **Thư viện, biến môi trường:** thêm `multer`; `FILE_STORAGE` (mặc định `postgres`, không khai báo cũng được).
+- **API mới** (chi tiết `docs/api.md` › Uploads): `POST /uploads/midi/analyze`, `POST /sheets`, `PATCH /sheets/:id`, `DELETE /sheets/:id`, `GET /users/me/sheets`, `GET /users/:id/sheets` (cho trang profile).
+- **Đổi hành vi API cũ:** bài `PRIVATE` chỉ người upload xem được: không có trong `GET /sheets`, `/sheets/tags`; người khác mở thì `404`. Sheet trả thêm `visibility`, `uploaderId`, `uploader`, `isMine`. `/sheets/:id/score` và `/view` nhận token (không bắt buộc).
+- **Engine MIDI** dời sang `src/features/uploads/midiToSheet.js` (dùng chung cho seed và upload), xoá `src/data/sheets/convertMidi.mjs`. Bài mẫu `chasing-kou` sửa 1 nốt dài 0 giây.
+- **Seed** không ghi đè bài người dùng upload nếu trùng id.
+- **Kiểm thử:** `npm test` (không cần DB) và `npm run uploads:smoke` (chạy với DB thật, tự dọn dữ liệu).
 
 **Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`.
 

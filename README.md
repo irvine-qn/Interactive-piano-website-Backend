@@ -84,7 +84,8 @@ piano-backend/
 ├── scripts/
 │   ├── midi-to-sheet.mjs       # MIDI -> sheet JSON (seed data), uses src/features/uploads/midiToSheet.js
 │   ├── build-sheets.mjs        # npm run sheets:build
-│   └── auth-regression.mjs     # Auth API regression test (record/compare)
+│   ├── auth-regression.mjs     # Auth API regression test (record/compare)
+│   └── uploads-smoke.mjs       # npm run uploads:smoke (upload feature on the real database)
 │
 ├── docs/
 │   ├── NOTES.md                # Technical notes for the team
@@ -331,6 +332,13 @@ Expected response:
 {
   "message": "Piano Backend is running!"
 }
+```
+
+Automated tests:
+
+```bash
+npm test               # unit and HTTP tests, no database needed
+npm run uploads:smoke  # upload feature against the real database (creates and removes temporary users and sheets)
 ```
 
 ---
@@ -707,7 +715,8 @@ README.md
 * [x] Register API
 * [x] Login API
 * [x] JWT authentication (token issued on register/login)
-* [ ] Music sheet upload
+* [x] Music sheet upload (MIDI): analyze, create, private / public, my uploads, edit, delete
+* [ ] Store uploaded files on a cloud service (at deploy time)
 * [ ] User's saved music sheets
 
 ### Frontend
@@ -798,4 +807,11 @@ npm run db:deploy           # apply migrations without drift checks (existing DB
 npm run db:seed             # load sample sheets
 npm run db:studio           # browse data in the browser
 npm run sheets:build        # regenerate sheet JSON from MIDI (src/data/sheets/catalog.json)
+```
+
+Tests:
+
+```bash
+npm test                    # unit and HTTP tests (no database)
+npm run uploads:smoke       # upload feature against the real database
 ```

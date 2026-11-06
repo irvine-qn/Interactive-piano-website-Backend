@@ -16,7 +16,7 @@ Hướng dẫn cài đặt, chạy server và tài liệu API nằm ở [README]
 | Sheets (`features/sheets/*`, `src/data/sheets/*`, `scripts/midi-to-sheet.mjs`, `scripts/build-sheets.mjs`) và engine MIDI / upload (`features/uploads/*`) | **Bình** | Quỳnh **không sửa** |
 | Database: Docker, Prisma (`prisma/*`, `prisma.config.js`, `src/lib/prisma.js`), `scripts/auth-regression.mjs` | **Bình** | Thêm bảng mới thì tạo migration theo mục 2, báo cho người kia |
 | User profile + User edit profile (API đọc/sửa thông tin người dùng, ảnh avatar) | **Quỳnh** | Bình **không sửa** |
-| User upload sheet (API upload file MIDI, chuyển MIDI → `notes`, `sheets.uploaderId`) | **Bình** (sắp làm) | Quỳnh **không sửa**. Profile cần danh sách bài đã upload thì thống nhất API trước |
+| User upload sheet (`features/uploads/*`, kể cả `/users/me/sheets`, `/users/:id/sheets`), `src/lib/fileStorage.js`, `scripts/uploads-smoke.mjs` | **Bình** | Quỳnh **không sửa**. Trang profile lấy bài của một người qua `GET /users/:id/sheets` (đã có) |
 | Bài đã lưu của người dùng | Chưa phân công | |
 | `src/app.js`, `src/server.js`, `src/config/env.js`, `src/common/*` | Cả hai | Chỉ sửa nếu không làm hỏng route của người kia |
 
@@ -97,12 +97,13 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 1. `npx prisma migrate status` → `Database schema is up to date!`
 2. `npm start`, mở `http://localhost:5000` → `{ "message": "Piano Backend is running!" }`
 3. Thử `GET /api/v1/piano`, `GET /api/v1/sheets`, `GET /api/v1/sheets/tags`, `GET /api/v1/sheets/fur-elise`.
-4. Có sửa Auth: chạy `scripts/auth-regression.mjs --compare` với baseline chụp trước khi sửa.
-5. Có thêm/đổi API: cập nhật README mục *Available API*.
+4. `npm test` (không cần DB). Có sửa sheets / uploads: `npm run uploads:smoke` (cần DB đang chạy, tự dọn dữ liệu thử).
+5. Có sửa Auth: chạy `scripts/auth-regression.mjs --compare` với baseline chụp trước khi sửa.
+6. Có thêm/đổi API: cập nhật README mục *Available API* và `docs/api.md`.
 
 ## 6. Việc còn mở
 
-- **Upload MIDI** (Bình, việc tiếp theo): API upload, lưu file trên cloud, chuyển MIDI → `notes`, gắn `sheets.uploaderId` → `users.id`.
-- **User profile / edit profile** (Quỳnh): API thông tin người dùng, ảnh avatar. File MIDI và avatar nên dùng chung một dịch vụ lưu trữ cloud, thống nhất trước khi làm.
+- **Upload MIDI**: Backend xong. Còn lưu file trên Cloud khi deploy (U-BE-12: thêm driver cho `fileStorage.js`, dùng chung dịch vụ với ảnh avatar của Quỳnh, cần thống nhất dịch vụ).
+- **User profile / edit profile** (Quỳnh): API thông tin người dùng, ảnh avatar. Danh sách bài của một người đã có sẵn (`GET /users/:id/sheets`).
+- **Danh sách bài của tôi trên giao diện** (*My uploads*: xem cả bài PRIVATE, sửa, xoá): API đã có, phần giao diện chờ thống nhất với trang profile của Quỳnh.
 - **Bài đã lưu của người dùng**: chưa phân công.
-- Workspace **Wait Mode** (FE) đang pending, làm sau Upload MIDI. Phía BE chưa cần gì thêm.
