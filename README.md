@@ -284,8 +284,10 @@ Check with `npx prisma migrate status` → `Database schema is up to date!`. Aft
 Make sure PostgreSQL is running and the database is migrated and seeded (sections 6.1 and 6.2). Then start the development server:
 
 ```bash
-npm start
+npm run dev
 ```
+
+`npm run dev` restarts the server automatically when the code changes. `npm start` does not, so after pulling or editing code you must stop it (`Ctrl+C`) and start it again.
 
 The server should run at:
 
@@ -734,6 +736,32 @@ Technical notes (big changes such as Auth moving from raw `pg` to Prisma, conven
 
 # 15. Useful Commands
 
+Run locally for the first time (Docker Desktop must be running):
+
+```bash
+npm install
+cp .env.example .env
+docker compose up -d
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+Run locally on later days:
+
+```bash
+docker compose up -d
+npm run dev
+```
+
+After pulling new code:
+
+```bash
+npm install
+npm run db:deploy
+npm run dev
+```
+
 Install dependencies:
 
 ```bash
@@ -743,7 +771,8 @@ npm install
 Start server:
 
 ```bash
-npm start
+npm run dev                 # restarts automatically when code changes
+npm start                   # no automatic restart
 ```
 
 Database and data:
