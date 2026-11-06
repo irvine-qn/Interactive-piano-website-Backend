@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseSheetFields } = require("./uploads.schema");
+const { parseSheetFields, parseUserId } = require("./uploads.schema");
 
 const VALID = { title: "  Golden   Hour ", difficulty: "MEDIUM" };
 
@@ -59,4 +59,11 @@ test("báo lỗi theo từng trường", () => {
   failsOn({ ...VALID, coverColor: "red" }, "coverColor", /one of: yellow/);
   failsOn({ ...VALID, visibility: "FOLLOWERS" }, "visibility", /one of: PUBLIC, PRIVATE/);
   assert.throws(() => parseSheetFields({ ...VALID, tracks: "a" }), { code: "INVALID_TRACKS" });
+});
+
+test("parseUserId: số nguyên dương, sai dạng thì 404 USER_NOT_FOUND", () => {
+  assert.equal(parseUserId("7"), 7);
+  for (const bad of ["0", "-1", "abc", "1.5", "1e3", "99999999999", "", " 7"]) {
+    assert.throws(() => parseUserId(bad), { status: 404, code: "USER_NOT_FOUND" }, bad);
+  }
 });

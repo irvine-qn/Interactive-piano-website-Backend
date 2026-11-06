@@ -600,6 +600,10 @@ Requires a token. Send `multipart/form-data` with `file` (a `.mid`/`.midi` file,
 
 Requires a token. Creates a sheet from a MIDI file: send `file` again with `title`, `difficulty` and optionally `composer`, `tags` (up to 3), `coverColor`, `visibility` (`PRIVATE` by default) and `tracks`. The sheet and the original file are saved in one transaction, the id is built from the title (`fur-elise`, `fur-elise-2`...). Returns `201` with the sheet summary. Invalid fields return `422 VALIDATION_FAILED` with `details.field`.
 
+### GET `/api/v1/users/me/sheets` and `/api/v1/users/:id/sheets`
+
+Sheets uploaded by a user, newest first, same query and `{ data, meta }` shape as `GET /api/v1/sheets`. `/users/me/sheets` requires a token and returns all my sheets (`PUBLIC` and `PRIVATE`). `/users/:id/sheets` returns only `PUBLIC` sheets of that user (`404 USER_NOT_FOUND` if the user does not exist).
+
 ### Errors
 
 All errors use `{ "error": { "code", "message", "details?" } }`:
@@ -611,6 +615,7 @@ All errors use `{ "error": { "code", "message", "details?" } }`:
 | 401 | `UNAUTHORIZED` | Missing or invalid token on a protected route |
 | 401 | `INVALID_CREDENTIALS` | Login with a wrong username/email or password |
 | 404 | `SHEET_NOT_FOUND` | Sheet id does not exist |
+| 404 | `USER_NOT_FOUND` | User id does not exist (`/users/:id/sheets`) |
 | 404 | `NOT_FOUND` | Route does not exist (also wrong HTTP method) |
 | 409 | `USERNAME_TAKEN` / `EMAIL_TAKEN` | Register with an existing username / email |
 | 409 | `SHEET_ID_TAKEN` | Could not pick a free id for a new sheet (many uploads with the same title at once), retry |

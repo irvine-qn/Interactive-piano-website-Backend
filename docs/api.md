@@ -41,6 +41,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | 401 | `UNAUTHORIZED` | Thiếu hoặc sai token, hoặc tài khoản trong token không còn tồn tại |
 | 401 | `INVALID_CREDENTIALS` | Sai tài khoản hoặc mật khẩu |
 | 404 | `NOT_FOUND` | Route không tồn tại |
+| 404 | `USER_NOT_FOUND` | Người dùng không tồn tại (`/users/:id/sheets`) |
 | 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại, hoặc là bài `PRIVATE` của người khác (trả giống hệt để không lộ là có bài) |
 | 409 | `USERNAME_TAKEN` | Username đã được dùng |
 | 409 | `EMAIL_TAKEN` | Email đã được dùng |
@@ -70,6 +71,8 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
 | POST | `/uploads/midi/analyze` | Bắt buộc | Phân tích file MIDI trước khi tạo bài (không lưu gì) |
 | POST | `/sheets` | Bắt buộc | Tạo bài từ file MIDI |
+| GET | `/users/me/sheets` | Bắt buộc | Bài tôi đã upload (cả `PRIVATE`) |
+| GET | `/users/:id/sheets` | Tùy chọn | Bài `PUBLIC` của một người dùng (trang profile) |
 
 ---
 
@@ -496,3 +499,21 @@ Bài và file gốc được lưu cùng lúc (lỗi thì không lưu gì). `id` 
 ```
 
 **Lỗi:** như analyze, thêm `422 VALIDATION_FAILED` (vd `{ "code": "VALIDATION_FAILED", "message": "Give your sheet a title.", "details": { "field": "title" } }`; `message` hiện thẳng lên giao diện) và `409 SHEET_ID_TAKEN`.
+
+### GET `/users/me/sheets`
+
+**Xác thực:** bắt buộc. Mọi bài người đang đăng nhập đã upload, cả `PUBLIC` và `PRIVATE`.
+
+**Query:** giống `GET /sheets` (`q`, `difficulty`, `tag`, `sort`, `page`, `pageSize`), nhưng `sort` mặc định là `newest`.
+
+**Thành công: `200`**, dạng giống `GET /sheets`: `{ "data": [Sheet...], "meta": { "page", "pageSize", "total", "totalPages" } }`.
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### GET `/users/:id/sheets`
+
+**Xác thực:** tùy chọn (chỉ ảnh hưởng `likedByMe`, `isMine`). Các bài `PUBLIC` mà người dùng `:id` đã upload, kể cả khi người xem là chính người đó (bài `PRIVATE` của mình xem ở `/users/me/sheets`). Dùng cho trang profile.
+
+**Query và response:** như `/users/me/sheets`.
+
+**Lỗi:** `404 USER_NOT_FOUND` (người dùng không tồn tại, hoặc `:id` không phải số nguyên dương), `422 VALIDATION_FAILED`.

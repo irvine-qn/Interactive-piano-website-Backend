@@ -18,4 +18,7 @@ const createSheet = (data, { buffer, originalname }) =>
     return sheet;
   });
 
-module.exports = { findIdsStartingWith, createSheet };
+// Có tài khoản này không (GET /users/:id/sheets). Không dùng users.repository.js vì đó là phần Auth của Quỳnh.
+const userExists = async (id) => Boolean(await prisma.user.findUnique({ where: { id }, select: { id: true } }));
+
+module.exports = { findIdsStartingWith, createSheet, userExists };

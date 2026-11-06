@@ -2,8 +2,9 @@ const ApiError = require("../../common/exceptions/ApiError");
 const sheetsRepository = require("./sheets.repository");
 const { buildChords, buildScore } = require("./sheets.score");
 
-const listSheets = async (query, userId) => {
-  const { items, total } = await sheetsRepository.findMany(query, userId);
+// scope: xem sheets.repository.js (mặc định Library = mọi bài PUBLIC)
+const listSheets = async (query, userId, scope) => {
+  const { items, total } = await sheetsRepository.findMany(query, userId, scope);
   return {
     data: items,
     meta: {

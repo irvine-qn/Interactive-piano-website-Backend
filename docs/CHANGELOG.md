@@ -11,6 +11,7 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 - Thư viện mới `multer`. Biến môi trường mới `FILE_STORAGE` (mặc định `postgres`, không khai báo cũng được).
 - API mới `POST /api/v1/uploads/midi/analyze` và `POST /api/v1/sheets` (tạo bài từ file MIDI), xem `docs/api.md` › Uploads.
 - Bài `PRIVATE` chỉ người upload xem được: không có trong `GET /sheets`, `/sheets/tags`; người khác mở thì `404`. Sheet trả thêm `visibility`, `uploaderId`, `uploader`, `isMine`.
+- API mới `GET /api/v1/users/me/sheets` (bài tôi đã upload) và `GET /api/v1/users/:id/sheets` (bài PUBLIC của một người, cho trang profile).
 - Engine chuyển MIDI dời sang `src/features/uploads/midiToSheet.js`, xoá `src/data/sheets/convertMidi.mjs`. Sửa 1 nốt dài 0 giây của `chasing-kou`; `npm run sheets:build` chạy lại được.
 
 **Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`.

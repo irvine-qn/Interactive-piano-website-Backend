@@ -3,6 +3,7 @@ const { suggestTitle, estimateDifficulty } = require("./sheetSuggestions");
 const { toSlug, pickFreeId } = require("./sheetId");
 const uploadsRepository = require("./uploads.repository");
 const sheetsRepository = require("../sheets/sheets.repository");
+const sheetsService = require("../sheets/sheets.service");
 const ApiError = require("../../common/exceptions/ApiError");
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -110,4 +111,16 @@ const createSheet = async (file, fields, userId) => {
   throw new ApiError(409, "SHEET_ID_TAKEN", "Could not save the sheet right now. Please try again.");
 };
 
-module.exports = { analyzeMidi, createSheet };
+// ===== Bài đã upload (U-BE-09). Dạng response giống GET /sheets: { data, meta } =====
+// uploaderId luôn là số thật (requireAuth / parseUserId), không bao giờ undefined: Prisma coi undefined là không lọc.
+
+// Mọi bài tôi upload, cả PRIVATE (My uploads)
+const listMySheets = (query, userId) => sheetsService.listSheets(query, userId, { uploaderId: userId });
+
+// Bài PUBLIC của một người (trang profile của Quỳnh). Người không tồn tại -> 404 USER_NOT_FOUND.
+const listUserSheets = async (userId, query, viewerId) => {
+  if (!(await uploadsRepository.userExists(userId))) throw new ApiError(404, "USER_NOT_FOUND", "User not found");
+  return sheetsService.listSheets(query, viewerId, { uploaderId: userId, visibility: "PUBLIC" });
+};
+
+module.exports = { analyzeMidi, createSheet, listMySheets, listUserSheets };

@@ -5,7 +5,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const uploadsRepository = require("./uploads.repository");
 const sheetsRepository = require("../sheets/sheets.repository");
-const { createSheet } = require("./uploads.service");
+const sheetsService = require("../sheets/sheets.service");
+const { createSheet, listMySheets, listUserSheets } = require("./uploads.service");
 
 const MIDI_DIR = path.join(__dirname, "../../data/sheets/midi");
 const file = (name) => ({ buffer: fs.readFileSync(path.join(MIDI_DIR, name)), originalname: name });
@@ -86,4 +87,22 @@ test("track chọn không có nốt / file hỏng: báo lỗi trước khi lưu"
     code: "INVALID_MIDI",
   });
   assert.equal(created.length, 0);
+});
+
+test("listMySheets: mọi bài của tôi (cả PRIVATE); listUserSheets: chỉ PUBLIC của người đó", async (t) => {
+  const calls = [];
+  t.mock.method(sheetsService, "listSheets", async (...args) => (calls.push(args), { data: [], meta: {} }));
+  t.mock.method(uploadsRepository, "userExists", async (id) => id === 5);
+  const query = { sort: "newest", page: 1, pageSize: 8 };
+
+  await listMySheets(query, 7);
+  await listUserSheets(5, query, 7);
+  await listUserSheets(5, query, undefined);
+  assert.deepEqual(calls, [
+    [query, 7, { uploaderId: 7 }],
+    [query, 7, { uploaderId: 5, visibility: "PUBLIC" }],
+    [query, undefined, { uploaderId: 5, visibility: "PUBLIC" }],
+  ]);
+  await assert.rejects(listUserSheets(6, query, 7), { status: 404, code: "USER_NOT_FOUND" });
+  assert.equal(calls.length, 3);
 });

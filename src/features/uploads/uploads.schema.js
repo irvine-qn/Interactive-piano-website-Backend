@@ -87,4 +87,13 @@ const parseSheetFields = (body = {}) => {
   };
 };
 
-module.exports = { parseTrackList, parseSheetFields };
+// ===== GET /users/:id/sheets =====
+// id người dùng là số nguyên dương; sai dạng thì coi như không có người này (404, như id không tồn tại)
+const MAX_USER_ID = 2147483647; // cột users.id là INT 4 byte
+const parseUserId = (value) => {
+  const id = /^\d{1,10}$/.test(String(value)) ? Number(value) : NaN;
+  if (!Number.isInteger(id) || id < 1 || id > MAX_USER_ID) throw new ApiError(404, "USER_NOT_FOUND", "User not found");
+  return id;
+};
+
+module.exports = { parseTrackList, parseSheetFields, parseUserId };

@@ -78,6 +78,8 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - Route upload: `receiveMidiFile` đặt **sau** `requireAuth`. Trường chữ của form trong `req.body` luôn là chuỗi (nhiều trường cùng tên thành mảng), phải tự kiểm tra kiểu.
 - Id bài upload tạo ở `src/features/uploads/sheetId.js` (`toSlug`) **phải giống `toSlug` của FE** (`features/upload/utils/sheetDetails.js`): bìa vẽ theo id, Preview ở `/upload` đoán id theo cách này. Thêm route cố định mới dưới `/sheets/<chữ>` thì thêm `<chữ>` vào `RESERVED_IDS`, nếu không bài cùng tên sẽ không mở được.
 - Seed bỏ qua id đã thuộc về bài người dùng upload. Thêm bài mẫu mới thì kiểm tra log seed.
+- `GET /users/me/sheets`, `/users/:id/sheets` nằm ở `uploads.routes.js` (Bình), không ở `features/users`. Quỳnh thêm route `/users/...` cho profile thì không khai báo trùng 2 đường dẫn này; route `/users/me/...` luôn khai báo trước `/users/:id/...`.
+- `findMany(query, userId, scope)` của `sheets.repository.js`: `scope` không được chứa giá trị `undefined` (vd `{ uploaderId: undefined }` thành không lọc, trả bài của mọi người).
 - Gợi ý track (`pickDefaultTracks`) chỉ đúng 8/9 bài mẫu: luôn để người dùng xác nhận track, đừng tự lưu theo gợi ý.
 
 ## 4. Lỗi dễ gặp khi chạy local
