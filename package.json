@@ -15,7 +15,8 @@
     "postdb:deploy": "prisma generate",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "sheets:build": "node scripts/build-sheets.mjs"
+    "sheets:build": "node scripts/build-sheets.mjs",
+    "uploads:smoke": "node scripts/uploads-smoke.mjs"
   },
   "repository": {
     "type": "git",

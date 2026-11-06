@@ -2,8 +2,9 @@ const ApiError = require("../../common/exceptions/ApiError");
 const sheetsRepository = require("./sheets.repository");
 const { buildChords, buildScore } = require("./sheets.score");
 
-const listSheets = async (query, userId) => {
-  const { items, total } = await sheetsRepository.findMany(query, userId);
+// scope: xem sheets.repository.js (mặc định Library = mọi bài PUBLIC)
+const listSheets = async (query, userId, scope) => {
+  const { items, total } = await sheetsRepository.findMany(query, userId, scope);
   return {
     data: items,
     meta: {
@@ -15,6 +16,7 @@ const listSheets = async (query, userId) => {
   };
 };
 
+// Bài PRIVATE của người khác cũng báo 404 như bài không tồn tại, không để lộ là có bài này
 const listLikedSheets = (query, userId) =>
   listSheets({ ...query, likedByUserId: userId }, userId);
 
@@ -26,12 +28,12 @@ const getSheetById = async (id, userId) => {
   return { ...sheet, chords: buildChords(sheet.notes) };
 };
 
-const getSheetScore = async (id) => buildScore(await getSheetById(id));
+const getSheetScore = async (id, userId) => buildScore(await getSheetById(id, userId));
 
 const listTags = async () => ({ data: await sheetsRepository.countTags() });
 
-const recordView = async (id) => {
-  const result = await sheetsRepository.incrementViews(id);
+const recordView = async (id, userId) => {
+  const result = await sheetsRepository.incrementViews(id, userId);
   if (!result) throw sheetNotFound(id);
   return result;
 };

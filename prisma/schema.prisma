@@ -19,30 +19,58 @@ enum Difficulty {
   EXPERT
 }
 
+// Bài upload mặc định PRIVATE (chỉ người upload thấy), người dùng tự bật PUBLIC để hiện trong Library.
+// Bài mẫu (seed) là PUBLIC.
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
 model Sheet {
-  id            String     @id // slug, ví dụ "canon-in-d"
+  id            String      @id // slug, ví dụ "canon-in-d"
   title         String
   subtitle      String?
   composer      String
   difficulty    Difficulty
   tags          String[]
   bpm           Int
-  timeSignature Int[]      @map("time_signature") // [tử số, mẫu số], ví dụ [3, 4]
-  keySignature  String?    @map("key_signature") // ví dụ "D major"
-  durationSec   Int        @map("duration_sec")
-  noteCount     Int        @map("note_count")
-  views         Int        @default(0)
-  likes         Int        @default(0)
-  coverColor    String     @default("yellow") @map("cover_color") // yellow | pink | mint | lavender
+  timeSignature Int[]       @map("time_signature") // [tử số, mẫu số], ví dụ [3, 4]
+  keySignature  String?     @map("key_signature") // ví dụ "D major"
+  durationSec   Int         @map("duration_sec")
+  noteCount     Int         @map("note_count")
+  views         Int         @default(0)
+  likes         Int         @default(0)
+  coverColor    String      @default("yellow") @map("cover_color") // yellow | pink | mint | lavender
   // Mảng nốt [{ midi, name, time, duration, velocity, hand }]. Chỉ lấy khi xem chi tiết, không lấy ở danh sách.
   notes         Json
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
   likedBy       SheetLike[]
+  // ===== Feature: User upload sheet =====
+  // null = bài mẫu (seed). Xoá tài khoản thì bài vẫn còn, chỉ mất thông tin người upload.
+  uploaderId    Int?        @map("uploader_id")
+  uploader      User?       @relation("UploadedSheets", fields: [uploaderId], references: [id], onDelete: SetNull)
+  visibility    Visibility  @default(PUBLIC)
+  file          SheetFile?
   practiceSessions PracticeSession[]
   // uploaderId sẽ thêm bằng migration riêng khi có bảng users (Feature Auth/User)
 
+  @@index([uploaderId])
   @@map("sheets")
+}
+
+// File MIDI gốc của bài upload, để chuyển lại khi engine tốt hơn / chọn lại track / tải lại file.
+// Bảng riêng để truy vấn danh sách bài không đọc kèm file. Chỉ đọc/ghi qua src/lib/fileStorage.js
+// (local lưu ở đây; khi deploy chuyển sang Cloud, xem WBS U-BE-12).
+model SheetFile {
+  sheetId      String   @id @map("sheet_id")
+  sheet        Sheet    @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  data         Bytes
+  originalName String   @map("original_name") @db.VarChar(255)
+  size         Int
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("sheet_files")
 }
 
 // ===== Feature: Auth =====
@@ -67,6 +95,7 @@ model User {
   showPracticeStats Boolean  @default(true) @map("show_practice_stats")
   likedSheets  SheetLike[]
   practiceSessions PracticeSession[]
+  uploadedSheets Sheet[]     @relation("UploadedSheets")
 
   @@map("users")
 }

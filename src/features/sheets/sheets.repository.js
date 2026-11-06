@@ -17,7 +17,17 @@ const SUMMARY_SELECT = {
   likes: true,
   coverColor: true,
   createdAt: true,
+  // Feature upload: quyền xem + người upload (null = bài mẫu)
+  visibility: true,
+  uploaderId: true,
+  uploader: { select: { id: true, username: true, displayName: true } },
 };
+
+// Bài người này được xem: PUBLIC, hoặc PRIVATE do chính họ upload.
+// Khách (userId rỗng) chỉ PUBLIC. KHÔNG viết { OR: [..., { uploaderId: userId }] } khi userId có thể undefined:
+// Prisma coi `uploaderId: undefined` là không lọc -> lộ mọi bài PRIVATE.
+const visibleTo = (userId) =>
+  userId ? { OR: [{ visibility: "PUBLIC" }, { uploaderId: userId }] } : { visibility: "PUBLIC" };
 
 const ORDER_BY = {
   popular: { views: "desc" },
@@ -26,11 +36,13 @@ const ORDER_BY = {
   title: { title: "asc" },
 };
 
-// Prisma đưa `contains` vào ILIKE mà không escape, nên "%" và "_" sẽ thành ký tự đại diện
 const escapeLike = (value) => value.replace(/[\\%_]/g, "\\$&");
+const LIBRARY_SCOPE = { visibility: "PUBLIC" };
 
-const buildWhere = ({ q, difficulty, tag, likedByUserId }) => ({
-  ...(likedByUserId && { likedBy: { some: { userId: likedByUserId } } }),
+const buildWhere = ({ q, difficulty, tag, likedByUserId }, scope = LIBRARY_SCOPE) => ({
+  ...(likedByUserId
+    ? { likedBy: { some: { userId: likedByUserId } }, AND: [visibleTo(likedByUserId)] }
+    : scope),
   ...(q && {
     OR: [
       { title: { contains: escapeLike(q), mode: "insensitive" } },
@@ -46,10 +58,16 @@ const withLikedByMe = (userId) => ({
   ...(userId && { likedBy: { where: { userId }, select: { userId: true } } }),
 });
 
-const toSheet = ({ likedBy, ...sheet }) => ({ ...sheet, likedByMe: Boolean(likedBy?.length) });
+// Dòng DB -> sheet trả cho FE: likedByMe, isMine, uploader { id, displayName } (chưa đặt tên hiển thị thì dùng username)
+const toSheet = ({ likedBy, uploader, ...sheet }, userId) => ({
+  ...sheet,
+  uploader: uploader && { id: uploader.id, displayName: uploader.displayName || uploader.username },
+  isMine: Boolean(userId) && sheet.uploaderId === userId,
+  likedByMe: Boolean(likedBy?.length),
+});
 
-const findMany = async ({ q, difficulty, tag, likedByUserId, sort, page, pageSize }, userId) => {
-  const where = buildWhere({ q, difficulty, tag, likedByUserId });
+const findMany = async ({ q, difficulty, tag, likedByUserId, sort, page, pageSize }, userId, scope = LIBRARY_SCOPE) => {
+  const where = buildWhere({ q, difficulty, tag, likedByUserId }, scope);
   const [items, total] = await prisma.$transaction([
     prisma.sheet.findMany({
       where,
@@ -60,44 +78,44 @@ const findMany = async ({ q, difficulty, tag, likedByUserId, sort, page, pageSiz
     }),
     prisma.sheet.count({ where }),
   ]);
-  return { items: items.map(toSheet), total };
+  return { items: items.map((item) => toSheet(item, userId)), total };
 };
 
+// Bài không có hoặc là bài PRIVATE của người khác -> null (service trả 404, không để lộ là bài có tồn tại)
 const findById = async (id, userId) => {
-  const sheet = await prisma.sheet.findUnique({
-    where: { id },
+  const sheet = await prisma.sheet.findFirst({
+    where: { id, ...visibleTo(userId) },
     select: { ...withLikedByMe(userId), notes: true },
   });
-  return sheet && toSheet(sheet);
+  return sheet && toSheet(sheet, userId);
 };
 
 // Prisma không group được theo phần tử của mảng nên dùng SQL: tách mảng tags thành từng dòng rồi đếm
+// Chỉ đếm bài PUBLIC: tag của bài PRIVATE không hiện ở bộ lọc Library
 const countTags = () =>
   prisma.$queryRaw`
     SELECT tag AS name, COUNT(*)::int AS count
     FROM sheets, unnest(tags) AS tag
+    WHERE sheets.visibility = 'PUBLIC'
     GROUP BY tag
     ORDER BY count DESC, name ASC
   `;
 
 // Tăng views ngay trong câu UPDATE (atomic, nhiều request cùng lúc không bị mất lượt).
-// Trả null nếu không có bài (Prisma báo lỗi P2025 khi không tìm thấy bản ghi để update).
-const incrementViews = async (id) => {
-  try {
-    return await prisma.sheet.update({
-      where: { id },
+// Trả null nếu không có bài / không được xem (updateMany không khớp dòng nào).
+const incrementViews = (id, userId) =>
+  prisma.$transaction(async (tx) => {
+    const { count } = await tx.sheet.updateMany({
+      where: { id, ...visibleTo(userId) },
       data: { views: { increment: 1 } },
-      select: { views: true },
     });
-  } catch (error) {
-    if (error.code === "P2025") return null;
-    throw error;
-  }
-};
+    if (!count) return null;
+    return tx.sheet.findUnique({ where: { id }, select: { views: true } });
+  });
 
 const toggleLike = (sheetId, userId) =>
   prisma.$transaction(async (tx) => {
-    const sheet = await tx.sheet.findUnique({ where: { id: sheetId }, select: { id: true } });
+    const sheet = await tx.sheet.findFirst({ where: { id: sheetId, ...visibleTo(userId) }, select: { id: true } });
     if (!sheet) return null;
 
     const where = { userId, sheetId };
@@ -121,7 +139,10 @@ const toggleLike = (sheetId, userId) =>
   });
 
 const createPracticeSession = async (sheetId, userId, data) => {
-  const sheet = await prisma.sheet.findUnique({ where: { id: sheetId }, select: { id: true } });
+  const sheet = await prisma.sheet.findFirst({
+    where: { id: sheetId, ...visibleTo(userId) },
+    select: { id: true },
+  });
   if (!sheet) return null;
   return prisma.practiceSession.create({
     data: { ...data, sheetId, userId },
@@ -130,7 +151,7 @@ const createPracticeSession = async (sheetId, userId, data) => {
 };
 
 const findPracticeHistory = async (userId, { page, pageSize }) => {
-  const where = { userId };
+  const where = { userId, sheet: visibleTo(userId) };
   const [items, total] = await prisma.$transaction([
     prisma.practiceSession.findMany({
       where,
@@ -153,4 +174,16 @@ const findPracticeHistory = async (userId, { page, pageSize }) => {
   };
 };
 
-module.exports = { createPracticeSession, findPracticeHistory, findMany, findById, countTags, incrementViews, toggleLike };
+module.exports = {
+  SUMMARY_SELECT,
+  visibleTo,
+  toSheet,
+  findMany,
+  findById,
+  countTags,
+  incrementViews,
+  toggleLike,
+  createPracticeSession,
+  findPracticeHistory,
+};
+
