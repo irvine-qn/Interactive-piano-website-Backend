@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseSheetFields, parseUserId } = require("./uploads.schema");
+const { parseSheetFields, parseSheetUpdate, parseUserId } = require("./uploads.schema");
 
 const VALID = { title: "  Golden   Hour ", difficulty: "MEDIUM" };
 
@@ -65,5 +65,33 @@ test("parseUserId: số nguyên dương, sai dạng thì 404 USER_NOT_FOUND", ()
   assert.equal(parseUserId("7"), 7);
   for (const bad of ["0", "-1", "abc", "1.5", "1e3", "99999999999", "", " 7"]) {
     assert.throws(() => parseUserId(bad), { status: 404, code: "USER_NOT_FOUND" }, bad);
+  }
+});
+test("parseSheetUpdate: chỉ kiểm tra trường có gửi, cùng luật với lúc tạo bài", () => {
+  assert.deepEqual(parseSheetUpdate({ title: "  New   name " }), { title: "New name" });
+  assert.deepEqual(parseSheetUpdate({ composer: "", tags: ["pop", "POP", " Lo  fi "], visibility: "PUBLIC", coverColor: "mint", difficulty: "HARD" }), {
+    composer: "Unknown",
+    tags: ["pop", "Lo fi"],
+    visibility: "PUBLIC",
+    coverColor: "mint",
+    difficulty: "HARD",
+  });
+  assert.deepEqual(parseSheetUpdate({ tags: [] }), { tags: [] });
+});
+
+test("parseSheetUpdate: từ chối trường không sửa được, giá trị sai, body rỗng", () => {
+  const fails = (body, field, message) =>
+    assert.throws(() => parseSheetUpdate(body), (e) => e.status === 422 && e.code === "VALIDATION_FAILED" && e.details?.field === field && message.test(e.message));
+  fails({ notes: [] }, "notes", /notes cannot be changed/);
+  fails({ title: "A", id: "x" }, "id", /cannot be changed/);
+  fails({ tracks: [0] }, "tracks", /cannot be changed/);
+  fails({ title: "" }, "title", /Give your sheet a title/);
+  fails({ title: 5 }, "title", /must be text/);
+  fails({ tags: "Pop" }, "tags", /list of text/);
+  fails({ tags: ["a", "b", "c", "d"] }, "tags", /up to 3/);
+  fails({ visibility: null }, "visibility", /must be text/);
+  fails({ coverColor: "" }, "coverColor", /must be one of/);
+  for (const empty of [{}, undefined, null, [], "x"]) {
+    assert.throws(() => parseSheetUpdate(empty), { status: 422, code: "VALIDATION_FAILED" });
   }
 });

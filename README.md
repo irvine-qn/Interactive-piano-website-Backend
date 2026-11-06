@@ -600,6 +600,10 @@ Requires a token. Send `multipart/form-data` with `file` (a `.mid`/`.midi` file,
 
 Requires a token. Creates a sheet from a MIDI file: send `file` again with `title`, `difficulty` and optionally `composer`, `tags` (up to 3), `coverColor`, `visibility` (`PRIVATE` by default) and `tracks`. The sheet and the original file are saved in one transaction, the id is built from the title (`fur-elise`, `fur-elise-2`...). Returns `201` with the sheet summary. Invalid fields return `422 VALIDATION_FAILED` with `details.field`.
 
+### PATCH / DELETE `/api/v1/sheets/:id`
+
+Requires a token, only for the uploader (anyone else, and sample sheets, get `404 SHEET_NOT_FOUND`). `PATCH` takes JSON with any of `title`, `composer`, `difficulty`, `tags`, `coverColor`, `visibility` and returns the updated sheet; notes, file and id never change. `DELETE` removes the sheet, its original file and its likes, and returns `204`.
+
 ### GET `/api/v1/users/me/sheets` and `/api/v1/users/:id/sheets`
 
 Sheets uploaded by a user, newest first, same query and `{ data, meta }` shape as `GET /api/v1/sheets`. `/users/me/sheets` requires a token and returns all my sheets (`PUBLIC` and `PRIVATE`). `/users/:id/sheets` returns only `PUBLIC` sheets of that user (`404 USER_NOT_FOUND` if the user does not exist).

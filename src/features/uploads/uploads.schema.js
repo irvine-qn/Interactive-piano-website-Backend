@@ -33,7 +33,8 @@ const cleanText = (value) => value.replace(/\s+/g, " ").trim();
 const readText = (body, field) => {
   const value = body[field];
   if (value === undefined) return undefined;
-  if (typeof value !== "string") throw invalid(field, `${field} must be sent once, as text.`);
+  if (Array.isArray(value)) throw invalid(field, `${field} must be sent once.`);
+  if (typeof value !== "string") throw invalid(field, `${field} must be text.`);
   return cleanText(value);
 };
 
@@ -60,19 +61,32 @@ const readTags = (value) => {
   return tags;
 };
 
-// req.body của multipart -> { title, composer, difficulty, tags, coverColor, visibility, tracks }
-const parseSheetFields = (body = {}) => {
+const readTitle = (body) => {
   const title = readText(body, "title");
   if (!title) throw invalid("title", "Give your sheet a title.");
   if (title.length > LIMITS.title) throw invalid("title", `The title can be at most ${LIMITS.title} characters.`);
+  return title;
+};
 
+const readComposer = (body) => {
   const composer = readText(body, "composer") || UNKNOWN_COMPOSER;
   if (composer.length > LIMITS.composer) {
     throw invalid("composer", `The composer can be at most ${LIMITS.composer} characters.`);
   }
+  return composer;
+};
 
+const readDifficulty = (body) => {
   const difficulty = readChoice(body, "difficulty", DIFFICULTIES);
   if (!difficulty) throw invalid("difficulty", "Choose a difficulty.");
+  return difficulty;
+};
+
+// req.body của multipart -> { title, composer, difficulty, tags, coverColor, visibility, tracks }
+const parseSheetFields = (body = {}) => {
+  const title = readTitle(body);
+  const composer = readComposer(body);
+  const difficulty = readDifficulty(body);
 
   return {
     title,
@@ -96,4 +110,39 @@ const parseUserId = (value) => {
   return id;
 };
 
-module.exports = { parseTrackList, parseSheetFields, parseUserId };
+// ===== PATCH /sheets/:id (JSON): chỉ sửa thông tin bài, không đổi nốt / file / id =====
+// Chỉ kiểm tra các trường có gửi, cùng luật với lúc tạo bài. Trường khác (notes, id, tracks...) -> 422.
+const EDITABLE_READERS = {
+  title: readTitle,
+  composer: readComposer,
+  difficulty: readDifficulty,
+  tags: (body) => {
+    if (!Array.isArray(body.tags)) throw invalid("tags", "tags must be a list of text.");
+    return readTags(body.tags);
+  },
+  coverColor: (body) => {
+    const color = readChoice(body, "coverColor", COVER_COLORS);
+    if (!color) throw invalid("coverColor", `coverColor must be one of: ${COVER_COLORS.join(", ")}.`);
+    return color;
+  },
+  visibility: (body) => {
+    const visibility = readChoice(body, "visibility", VISIBILITIES);
+    if (!visibility) throw invalid("visibility", `visibility must be one of: ${VISIBILITIES.join(", ")}.`);
+    return visibility;
+  },
+};
+
+const parseSheetUpdate = (body) => {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new ApiError(422, "VALIDATION_FAILED", "Send the fields to change as a JSON object.");
+  }
+  const unknown = Object.keys(body).find((field) => !EDITABLE_READERS[field]);
+  if (unknown) {
+    throw invalid(unknown, `${unknown} cannot be changed. You can change: ${Object.keys(EDITABLE_READERS).join(", ")}.`);
+  }
+  const fields = Object.fromEntries(Object.keys(body).map((field) => [field, EDITABLE_READERS[field](body)]));
+  if (!Object.keys(fields).length) throw new ApiError(422, "VALIDATION_FAILED", "Nothing to change.");
+  return fields;
+};
+
+module.exports = { parseTrackList, parseSheetFields, parseSheetUpdate, parseUserId };

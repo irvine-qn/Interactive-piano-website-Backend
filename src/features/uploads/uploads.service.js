@@ -123,4 +123,20 @@ const listUserSheets = async (userId, query, viewerId) => {
   return sheetsService.listSheets(query, viewerId, { uploaderId: userId, visibility: "PUBLIC" });
 };
 
-module.exports = { analyzeMidi, createSheet, listMySheets, listUserSheets };
+// ===== Sửa / xoá bài của mình (U-BE-10) =====
+// Không phải bài của tôi (bài người khác, bài mẫu, không tồn tại) -> 404 như nhau, không để lộ bài PRIVATE của người khác.
+const notMine = (id) => new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}" not found`);
+
+// Chỉ đổi thông tin bài; id giữ nguyên (link cũ vẫn mở được, bìa giữ nguyên vì vẽ theo id)
+const updateSheet = async (id, fields, userId) => {
+  const data = fields.tags ? { ...fields, tags: await matchKnownTags(fields.tags) } : fields;
+  const sheet = await uploadsRepository.updateOwnSheet(id, userId, data);
+  if (!sheet) throw notMine(id);
+  return sheetsRepository.toSheet(sheet, userId);
+};
+
+const deleteSheet = async (id, userId) => {
+  if (!(await uploadsRepository.deleteOwnSheet(id, userId))) throw notMine(id);
+};
+
+module.exports = { analyzeMidi, createSheet, listMySheets, listUserSheets, updateSheet, deleteSheet };

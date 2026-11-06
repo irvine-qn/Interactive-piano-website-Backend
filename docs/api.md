@@ -71,6 +71,8 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
 | POST | `/uploads/midi/analyze` | Bắt buộc | Phân tích file MIDI trước khi tạo bài (không lưu gì) |
 | POST | `/sheets` | Bắt buộc | Tạo bài từ file MIDI |
+| PATCH | `/sheets/:id` | Bắt buộc | Sửa thông tin bài của mình |
+| DELETE | `/sheets/:id` | Bắt buộc | Xoá bài của mình |
 | GET | `/users/me/sheets` | Bắt buộc | Bài tôi đã upload (cả `PRIVATE`) |
 | GET | `/users/:id/sheets` | Tùy chọn | Bài `PUBLIC` của một người dùng (trang profile) |
 
@@ -499,6 +501,28 @@ Bài và file gốc được lưu cùng lúc (lỗi thì không lưu gì). `id` 
 ```
 
 **Lỗi:** như analyze, thêm `422 VALIDATION_FAILED` (vd `{ "code": "VALIDATION_FAILED", "message": "Give your sheet a title.", "details": { "field": "title" } }`; `message` hiện thẳng lên giao diện) và `409 SHEET_ID_TAKEN`.
+
+### PATCH `/sheets/:id`
+
+**Xác thực:** bắt buộc, chỉ người upload. Bài của người khác, bài mẫu hoặc bài không tồn tại đều trả `404 SHEET_NOT_FOUND`.
+
+**Body (JSON):** chỉ gửi trường muốn đổi, cùng luật với lúc tạo bài: `title`, `composer` (rỗng thành `Unknown`), `difficulty`, `tags` (mảng, tối đa 3), `coverColor`, `visibility`. Không đổi được nốt, file hay `id` (đổi tên bài thì `id` giữ nguyên, link cũ vẫn mở được). Gửi trường khác thì `422 VALIDATION_FAILED` với `details.field` là trường đó.
+
+```json
+{ "title": "Golden Hour (Piano)", "visibility": "PUBLIC" }
+```
+
+**Thành công: `200`**, đối tượng Sheet sau khi sửa.
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`, `422 VALIDATION_FAILED`.
+
+### DELETE `/sheets/:id`
+
+**Xác thực:** bắt buộc, chỉ người upload (như `PATCH`). Xoá bài, file MIDI gốc và các lượt thích của bài.
+
+**Thành công: `204`**, không có nội dung.
+
+**Lỗi:** `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`.
 
 ### GET `/users/me/sheets`
 

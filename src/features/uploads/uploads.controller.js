@@ -1,5 +1,5 @@
 const uploadsService = require("./uploads.service");
-const { parseTrackList, parseSheetFields, parseUserId } = require("./uploads.schema");
+const { parseTrackList, parseSheetFields, parseSheetUpdate, parseUserId } = require("./uploads.schema");
 const { parseListQuery } = require("../sheets/sheets.schema");
 
 // req.file do receiveMidiFile (upload.middleware.js) đặt vào; req.body.tracks (tuỳ chọn) là các track đang chọn
@@ -23,4 +23,14 @@ const getUserSheets = async (req, res) => {
   res.json(await uploadsService.listUserSheets(parseUserId(req.params.id), parseUploadsQuery(req.query), req.userId));
 };
 
-module.exports = { analyzeMidi, createSheet, getMySheets, getUserSheets };
+const updateSheet = async (req, res) => {
+  res.json(await uploadsService.updateSheet(req.params.id, parseSheetUpdate(req.body), req.userId));
+};
+
+// 204: không có nội dung trả về
+const deleteSheet = async (req, res) => {
+  await uploadsService.deleteSheet(req.params.id, req.userId);
+  res.status(204).end();
+};
+
+module.exports = { analyzeMidi, createSheet, getMySheets, getUserSheets, updateSheet, deleteSheet };

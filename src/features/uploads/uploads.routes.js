@@ -9,6 +9,9 @@ const router = express.Router();
 router.post("/uploads/midi/analyze", requireAuth, receiveMidiFile, uploadsController.analyzeMidi);
 // Tạo bài từ file (bước 2). Nằm ở đây, không ở sheets.routes.js, vì cần receiveMidiFile và engine upload
 router.post("/sheets", requireAuth, receiveMidiFile, uploadsController.createSheet);
+// Sửa thông tin / xoá bài của mình (U-BE-10). Body PATCH là JSON
+router.patch("/sheets/:id", requireAuth, uploadsController.updateSheet);
+router.delete("/sheets/:id", requireAuth, uploadsController.deleteSheet);
 // Bài đã upload (U-BE-09). Đặt ở đây, không ở features/users (phần Auth / profile của Quỳnh).
 // /users/me/sheets phải khai báo trước /users/:id/sheets, nếu không "me" sẽ bị hiểu là một id
 router.get("/users/me/sheets", requireAuth, uploadsController.getMySheets);
