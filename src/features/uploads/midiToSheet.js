@@ -202,6 +202,7 @@ const convertMidi = (midi, { tracks } = {}) => {
 
 module.exports = {
   parseMidi,
+  isPianoTrack,
   describeTracks,
   pickDefaultTracks,
   convertMidi,

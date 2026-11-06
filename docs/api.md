@@ -35,13 +35,22 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | HTTP | `code` | Khi nào |
 | --- | --- | --- |
 | 400 | `INVALID_JSON` | Body không phải JSON hợp lệ |
+| 400 | `FILE_REQUIRED` | Upload không gửi file |
+| 400 | `UNEXPECTED_FILE` | Upload gửi nhiều file hoặc sai tên trường (phải là `file`) |
+| 400 | `INVALID_UPLOAD` | Request multipart hỏng |
 | 401 | `UNAUTHORIZED` | Thiếu hoặc sai token, hoặc tài khoản trong token không còn tồn tại |
 | 401 | `INVALID_CREDENTIALS` | Sai tài khoản hoặc mật khẩu |
 | 404 | `NOT_FOUND` | Route không tồn tại |
 | 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại |
 | 409 | `USERNAME_TAKEN` | Username đã được dùng |
 | 409 | `EMAIL_TAKEN` | Email đã được dùng |
+| 413 | `FILE_TOO_LARGE` | File upload lớn hơn 1 MB |
+| 415 | `UNSUPPORTED_FILE` | File upload không phải MIDI (sai đuôi hoặc không bắt đầu bằng `MThd`) |
 | 422 | `VALIDATION_FAILED` | Dữ liệu gửi lên không hợp lệ |
+| 422 | `INVALID_MIDI` | File MIDI hỏng, không đọc được |
+| 422 | `INVALID_TRACKS` | Danh sách track sai định dạng, hoặc track không tồn tại / không có nốt |
+| 422 | `NO_NOTES` | Các track đã chọn không có nốt nào trong 88 phím |
+| 422 | `MIDI_TOO_LARGE` | Bài quá 20 000 nốt hoặc quá 20 phút |
 | 500 | `INTERNAL_ERROR` | Lỗi server, thường do PostgreSQL chưa chạy |
 
 ## Danh sách endpoint
@@ -58,6 +67,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | GET | `/sheets/:id/score` | Không | Bản nhạc đã chuyển sang vị trí trên khuông |
 | POST | `/sheets/:id/view` | Không | Tăng lượt xem |
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
+| POST | `/uploads/midi/analyze` | Bắt buộc | Phân tích file MIDI trước khi tạo bài (không lưu gì) |
 
 ---
 
@@ -378,3 +388,57 @@ Tăng lượt xem thêm 1. Không cần body.
 ```
 
 **Lỗi:** `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`.
+
+## Uploads
+
+Upload bài là 2 bước: phân tích file (`/uploads/midi/analyze`, không lưu gì) để người dùng xem và sửa lựa chọn track, rồi tạo bài (sắp có). Gửi file bằng `multipart/form-data`, trường `file`, đuôi `.mid`/`.midi`, tối đa 1 MB.
+
+### POST `/uploads/midi/analyze`
+
+**Xác thực:** bắt buộc.
+
+**Form:**
+
+| Trường | Bắt buộc | Mô tả |
+| --- | --- | --- |
+| `file` | Có | File MIDI |
+| `tracks` | Không | Các track đang chọn, vd `0,1` (hoặc nhiều trường `tracks`). Không gửi thì dùng track gợi ý. Gọi lại khi người dùng đổi lựa chọn để số nốt, thời lượng, độ khó và cảnh báo tính theo các track đó |
+
+**Thành công: `200`**
+
+```json
+{
+  "fileName": "fur-elise.mid",
+  "suggestedTitle": "Fur Elise",
+  "suggestedDifficulty": "EASY",
+  "bpm": 120,
+  "timeSignature": [3, 4],
+  "keySignature": "C major",
+  "durationSec": 33,
+  "noteCount": 104,
+  "tracks": [
+    {
+      "index": 0,
+      "name": "",
+      "instrument": "acoustic grand piano",
+      "program": 0,
+      "isPiano": true,
+      "isPercussion": false,
+      "noteCount": 86,
+      "minNote": "C4",
+      "maxNote": "F5",
+      "suggested": true
+    }
+  ],
+  "suggestedTracks": [0, 1],
+  "selectedTracks": [0, 1],
+  "warnings": []
+}
+```
+
+- `tracks`: chỉ các track có nốt. `instrument` có thể `null`. `suggested` = được gợi ý chọn (track piano, bỏ track trống và track quá nhỏ so với track chính).
+- `suggestedTitle`: lấy từ tên file (tên ghi trong file MIDI thường rỗng hoặc là tên nhạc cụ).
+- `suggestedDifficulty`: ước lượng từ mật độ nốt (khớp 8/9 bài mẫu), người dùng sửa được.
+- `warnings`: `[{ code, count, message }]`, `message` hiện thẳng lên giao diện. Mã: `OUT_OF_RANGE_NOTES` (nốt ngoài 88 phím bị bỏ), `ZERO_LENGTH_NOTES` (nốt dài 0 giây được kéo thành 50 ms), `TEMPO_CHANGES` (bài đổi tempo, bản nhạc có thể lệch ô nhịp), `NO_PIANO_TRACK` (không có track piano, đang gợi ý nhạc cụ khác).
+
+**Lỗi:** `401 UNAUTHORIZED`, `400 FILE_REQUIRED` / `UNEXPECTED_FILE` / `INVALID_UPLOAD`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE`, `422 INVALID_MIDI` / `INVALID_TRACKS` / `NO_NOTES` / `MIDI_TOO_LARGE`.

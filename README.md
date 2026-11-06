@@ -46,7 +46,12 @@ piano-backend/
 │   │   ├── users/
 │   │   │   └── users.repository.js
 │   │   ├── uploads/
-│   │   │   └── midiToSheet.js
+│   │   │   ├── midiToSheet.js
+│   │   │   ├── sheetSuggestions.js
+│   │   │   ├── uploads.controller.js
+│   │   │   ├── uploads.routes.js
+│   │   │   ├── uploads.schema.js
+│   │   │   └── uploads.service.js
 │   │   ├── collections/
 │   │   ├── workspace/
 │   │   │   ├── workspace.controller.js
@@ -579,6 +584,14 @@ node scripts/auth-regression.mjs --compare baseline.json   # after the change
 
 Options: `--base http://localhost:5000`, `--existing <username>:<password>` (also check an account that already exists).
 
+## Uploads
+
+Feature: `src/features/uploads/` (routes → controller → schema → service). The MIDI engine is `midiToSheet.js`, file upload is handled by `src/common/middlewares/upload.middleware.js` (multer). Full request/response details: [`docs/api.md`](docs/api.md#uploads).
+
+### POST `/api/v1/uploads/midi/analyze`
+
+Requires a token. Send `multipart/form-data` with `file` (a `.mid`/`.midi` file, at most 1 MB) and optionally `tracks` (for example `0,1`). Reads the file and returns the tracks with a suggested selection, a suggested title (from the file name), a suggested difficulty, BPM, time and key signature, duration, note count and warnings. **Nothing is saved**: call it again with `tracks` when the user changes the selection.
+
 ### Errors
 
 All errors use `{ "error": { "code", "message", "details?" } }`:
@@ -586,11 +599,16 @@ All errors use `{ "error": { "code", "message", "details?" } }`:
 | Status | Code | When |
 | --- | --- | --- |
 | 400 | `INVALID_JSON` | Request body is not valid JSON |
+| 400 | `FILE_REQUIRED` / `UNEXPECTED_FILE` / `INVALID_UPLOAD` | Upload without a file, with several files or a wrong field name, or a broken multipart request |
+| 401 | `UNAUTHORIZED` | Missing or invalid token on a protected route |
 | 401 | `INVALID_CREDENTIALS` | Login with a wrong username/email or password |
 | 404 | `SHEET_NOT_FOUND` | Sheet id does not exist |
 | 404 | `NOT_FOUND` | Route does not exist (also wrong HTTP method) |
 | 409 | `USERNAME_TAKEN` / `EMAIL_TAKEN` | Register with an existing username / email |
+| 413 | `FILE_TOO_LARGE` | Uploaded file is larger than 1 MB |
+| 415 | `UNSUPPORTED_FILE` | Uploaded file is not a MIDI file |
 | 422 | `VALIDATION_FAILED` | Invalid query parameter or request body |
+| 422 | `INVALID_MIDI` / `INVALID_TRACKS` / `NO_NOTES` / `MIDI_TOO_LARGE` | Damaged MIDI file, wrong track selection, no playable notes, more than 20 000 notes or 20 minutes |
 | 500 | `INTERNAL_ERROR` | Unexpected server error (e.g. database is down) |
 
 ---

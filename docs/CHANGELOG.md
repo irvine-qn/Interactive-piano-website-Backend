@@ -5,6 +5,13 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-06 – API phân tích file MIDI (U-BE-06, Bình)
+
+- `POST /api/v1/uploads/midi/analyze` (bắt buộc đăng nhập): đọc file, trả track + track gợi ý, tên bài gợi ý (từ tên file), độ khó gợi ý, BPM, nhịp, giọng, thời lượng, số nốt, cảnh báo. **Không lưu gì.** Gửi thêm `tracks` để tính lại theo track đang chọn. Chi tiết: `docs/api.md` › Uploads.
+- Feature mới `src/features/uploads/` (routes, controller, schema, service, `sheetSuggestions.js`).
+
+**Cần làm sau khi pull:** khởi động lại server.
+
 ## 2026-11-06 – Nhận file upload (U-BE-05, Bình)
 
 - Thêm thư viện `multer` và middleware `src/common/middlewares/upload.middleware.js` (`receiveMidiFile`): nhận đúng 1 file MIDI ở trường `file` (≤ 1 MB, đuôi `.mid`/`.midi`, bắt đầu bằng `MThd`), giữ tên file tiếng Việt. Chưa gắn vào route nào (làm ở U-BE-06).
