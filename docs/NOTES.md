@@ -106,3 +106,4 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - **Upload MIDI**: Backend xong. Còn lưu file trên Cloud khi deploy (U-BE-12: thêm driver cho `fileStorage.js`, dùng chung dịch vụ với ảnh hồ sơ, cần thống nhất dịch vụ).
 - **Ảnh hồ sơ:** đang tạm lưu trong PostgreSQL (`user_images`), client chỉ dùng URL. Khi deploy chuyển sang Cloud.
 - **Bài đã lưu của người dùng**: chưa phân công.
+- **Kết quả đánh giá code (2026-11-07):** AU-01 → AU-17 trong `TASK_DECOMPOSITION.md` (repo FrontEnd). **Chưa nên deploy công khai** khi chưa có rate limit, hạn mức upload và giới hạn CORS (AU-03 → AU-05).
