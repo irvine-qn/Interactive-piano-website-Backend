@@ -8,9 +8,11 @@ router.get("/sheets", optionalAuth, sheetsController.getSheets);
 // Phải khai báo trước /sheets/:id, nếu không "tags" và "liked" sẽ bị hiểu là một id
 router.get("/sheets/tags", sheetsController.getTags);
 router.get("/sheets/liked", requireAuth, sheetsController.getLikedSheets);
+router.get("/sheets/practice-history", requireAuth, sheetsController.getPracticeHistory);
 router.get("/sheets/:id", optionalAuth, sheetsController.getSheet);
 router.get("/sheets/:id/score", sheetsController.getScore);
 router.post("/sheets/:id/view", sheetsController.postView);
 router.post("/sheets/:id/like", requireAuth, sheetsController.postLike);
+router.post("/sheets/:id/practice-sessions", requireAuth, sheetsController.postPracticeSession);
 
 module.exports = router;

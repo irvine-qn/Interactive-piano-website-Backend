@@ -120,4 +120,37 @@ const toggleLike = (sheetId, userId) =>
     return { liked: true, likes };
   });
 
-module.exports = { findMany, findById, countTags, incrementViews, toggleLike };
+const createPracticeSession = async (sheetId, userId, data) => {
+  const sheet = await prisma.sheet.findUnique({ where: { id: sheetId }, select: { id: true } });
+  if (!sheet) return null;
+  return prisma.practiceSession.create({
+    data: { ...data, sheetId, userId },
+    select: { id: true, noteCount: true, durationSec: true },
+  });
+};
+
+const findPracticeHistory = async (userId, { page, pageSize }) => {
+  const where = { userId };
+  const [items, total] = await prisma.$transaction([
+    prisma.practiceSession.findMany({
+      where,
+      select: {
+        id: true,
+        sheetId: true,
+        noteCount: true,
+        durationSec: true,
+        sheet: { select: { title: true } },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.practiceSession.count({ where }),
+  ]);
+  return {
+    items: items.map(({ sheet, ...session }) => ({ ...session, title: sheet.title })),
+    total,
+  };
+};
+
+module.exports = { createPracticeSession, findPracticeHistory, findMany, findById, countTags, incrementViews, toggleLike };

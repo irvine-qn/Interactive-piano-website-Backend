@@ -3,6 +3,9 @@ const DIFFICULTIES = ["EASY", "MEDIUM", "HARD", "EXPERT"];
 const SORT_OPTIONS = ["popular", "likes", "newest", "title"];
 const DEFAULT_SORT = "popular";
 const MAX_PAGE_SIZE = 50;
+const PRACTICE_MIN_NOTES = 5;
+const PRACTICE_MAX_NOTES = 1000000;
+const PRACTICE_MAX_DURATION_SEC = 86400;
 
 const CHROMATIC_NOTES = [
   { letter: "C" },
@@ -65,6 +68,9 @@ module.exports = {
   SORT_OPTIONS,
   DEFAULT_SORT,
   MAX_PAGE_SIZE,
+  PRACTICE_MIN_NOTES,
+  PRACTICE_MAX_NOTES,
+  PRACTICE_MAX_DURATION_SEC,
   CHROMATIC_NOTES,
   KEY_SIGNATURES,
   NATURAL_PITCH_CLASSES,

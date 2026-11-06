@@ -57,10 +57,12 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
 | GET | `/sheets/tags` | Không | Danh sách thể loại |
 | GET | `/sheets/liked` | Bắt buộc | Danh sách bài người dùng đã thích |
+| GET | `/sheets/practice-history` | Bắt buộc | Lịch sử chơi của người dùng |
 | GET | `/sheets/:id` | Tùy chọn | Chi tiết bài nhạc |
 | GET | `/sheets/:id/score` | Không | Bản nhạc đã chuyển sang vị trí trên khuông |
 | POST | `/sheets/:id/view` | Không | Tăng lượt xem |
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
+| POST | `/sheets/:id/practice-sessions` | Bắt buộc | Lưu một lượt chơi |
 
 ---
 
@@ -301,6 +303,40 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
 **Xác thực:** bắt buộc. Query và response giống `GET /sheets`, chỉ gồm các bài người dùng đang thích.
 
 **Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### GET `/sheets/practice-history`
+
+**Xác thực:** bắt buộc. Lượt chơi mới nhất đứng đầu. Query `page`, `pageSize` giống `GET /sheets`.
+
+**Thành công: `200`**
+
+```json
+{
+  "data": [
+    { "id": 1, "sheetId": "fur-elise", "title": "Für Elise", "noteCount": 120, "durationSec": 95 }
+  ],
+  "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
+}
+```
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### POST `/sheets/:id/practice-sessions`
+
+**Xác thực:** bắt buộc.
+
+| Trường | Kiểu | Ràng buộc |
+| --- | --- | --- |
+| `noteCount` | integer | Số phím đã bấm, từ 5 đến 1000000. Dưới 5 phím không được lưu |
+| `durationSec` | integer | Thời lượng thực sự chơi tính bằng giây, từ 0 đến 86400 |
+
+**Thành công: `201`**
+
+```json
+{ "id": 1, "noteCount": 120, "durationSec": 95 }
+```
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`, `422 VALIDATION_FAILED`.
 
 ### GET `/sheets/:id`
 
