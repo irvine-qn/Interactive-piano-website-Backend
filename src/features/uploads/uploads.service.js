@@ -98,7 +98,8 @@ const createSheet = async (file, fields, userId) => {
   for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt += 1) {
     const id = pickFreeId(base, await uploadsRepository.findIdsStartingWith(base));
     try {
-      return { ...(await uploadsRepository.createSheet({ id, ...data }, file)), likedByMe: false };
+      // Cùng dạng với GET /sheets (uploader, isMine, likedByMe)
+      return sheetsRepository.toSheet(await uploadsRepository.createSheet({ id, ...data }, file), userId);
     } catch (error) {
       if (error.code === "P2002") continue;
       // Token hợp lệ nhưng tài khoản đã bị xoá (uploaderId không còn trong users)

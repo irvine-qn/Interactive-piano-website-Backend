@@ -63,7 +63,7 @@ Trước đây sheet là file JSON đọc trực tiếp. Bây giờ bảng `shee
 - Gặp lời nhắc reset kèm *All data will be lost*: **không đồng ý**. Hầu hết trường hợp dùng `npm run db:deploy` hoặc `npx prisma migrate resolve --applied <tên_migration>` là đủ (README 6.3).
 - Khoá chính `users.id` là số tự tăng (`SERIAL`), còn `sheets.id` là slug chữ (`fur-elise`).
 - File MIDI gốc của bài upload (`sheet_files`) **chỉ đọc/ghi qua `src/lib/fileStorage.js`**, không gọi `prisma.sheetFile` trực tiếp: khi deploy sẽ chuyển sang Cloud.
-- `sheets.visibility = PRIVATE` **chưa được lọc** ở các API sheet cho tới khi xong U-BE-08: đừng dựa vào nó để ẩn bài.
+- Truy vấn bài theo người xem **luôn dùng `visibleTo(userId)`** (`sheets.repository.js`). Đừng tự viết `{ uploaderId: userId }`: khách có `userId` là `undefined` và Prisma coi `undefined` là *không lọc*, lộ mọi bài `PRIVATE`. API mới đọc bài theo id thì gắn `optionalAuth` để người upload mở được bài `PRIVATE` của mình.
 
 ## 3. Dữ liệu bài nhạc (`sheets.notes`) – FE phụ thuộc vào định dạng này
 

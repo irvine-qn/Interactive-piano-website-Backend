@@ -411,6 +411,8 @@ Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existi
 
 ## Sheets (Sheet Library & Workspace pages)
 
+Only `PUBLIC` sheets are listed and counted in tags. A `PRIVATE` sheet (uploaded by a user) can only be opened by its uploader: everyone else gets `404 SHEET_NOT_FOUND`. Send the token on `GET /sheets/:id`, `/score` and `POST /view` so the uploader can open it.
+
 Feature: `src/features/sheets/` (routes → controller → service → repository). Sheet data is read from the PostgreSQL table `sheets` through Prisma (`sheets.repository.js`). Run `npm run db:seed` first to load the sample sheets.
 
 ### GET `/api/v1/sheets`

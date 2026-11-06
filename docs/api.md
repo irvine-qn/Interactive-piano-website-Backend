@@ -18,7 +18,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | Mức | Hành vi |
 | --- | --- |
 | Không | Không cần token |
-| Tùy chọn | Có token hợp lệ thì `likedByMe` theo người dùng đó. Không có hoặc sai token vẫn trả `200`, `likedByMe` là `false` |
+| Tùy chọn | Có token hợp lệ thì `likedByMe`, `isMine` theo người dùng đó và người upload xem được bài `PRIVATE` của mình. Không có hoặc sai token vẫn trả `200` như khách |
 | Bắt buộc | Không có hoặc sai token trả `401 UNAUTHORIZED` |
 
 ### Định dạng lỗi
@@ -41,7 +41,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | 401 | `UNAUTHORIZED` | Thiếu hoặc sai token, hoặc tài khoản trong token không còn tồn tại |
 | 401 | `INVALID_CREDENTIALS` | Sai tài khoản hoặc mật khẩu |
 | 404 | `NOT_FOUND` | Route không tồn tại |
-| 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại |
+| 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại, hoặc là bài `PRIVATE` của người khác (trả giống hệt để không lộ là có bài) |
 | 409 | `USERNAME_TAKEN` | Username đã được dùng |
 | 409 | `EMAIL_TAKEN` | Email đã được dùng |
 | 409 | `SHEET_ID_TAKEN` | Không tạo được id cho bài (rất hiếm, nhiều người cùng tạo bài cùng tên), gửi lại là được |
@@ -65,8 +65,8 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
 | GET | `/sheets/tags` | Không | Danh sách thể loại |
 | GET | `/sheets/:id` | Tùy chọn | Chi tiết bài nhạc |
-| GET | `/sheets/:id/score` | Không | Bản nhạc đã chuyển sang vị trí trên khuông |
-| POST | `/sheets/:id/view` | Không | Tăng lượt xem |
+| GET | `/sheets/:id/score` | Tùy chọn | Bản nhạc đã chuyển sang vị trí trên khuông |
+| POST | `/sheets/:id/view` | Tùy chọn | Tăng lượt xem |
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
 | POST | `/uploads/midi/analyze` | Bắt buộc | Phân tích file MIDI trước khi tạo bài (không lưu gì) |
 | POST | `/sheets` | Bắt buộc | Tạo bài từ file MIDI |
@@ -210,6 +210,12 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
 | `coverColor` | string | `yellow`, `pink`, `mint`, `lavender` |
 | `createdAt` | string | ISO 8601 |
 | `likedByMe` | boolean | |
+| `visibility` | string | `PUBLIC` hoặc `PRIVATE` (chỉ người upload thấy) |
+| `uploaderId` | number hoặc null | `null` = bài mẫu |
+| `uploader` | object hoặc null | `{ id, displayName }` của người upload (chưa đặt tên hiển thị thì là username), `null` = bài mẫu |
+| `isMine` | boolean | Bài do người đang đăng nhập upload |
+
+**Quyền xem (U-BE-08):** `GET /sheets` và `GET /sheets/tags` chỉ tính bài `PUBLIC` (kể cả với người upload; bài `PRIVATE` của tôi xem ở danh sách bài đã upload). `GET /sheets/:id`, `/score`, `/view`, `/like` với bài `PRIVATE` của người khác trả `404 SHEET_NOT_FOUND`.
 
 ### GET `/sheets`
 

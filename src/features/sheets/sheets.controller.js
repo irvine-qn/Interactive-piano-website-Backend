@@ -11,7 +11,7 @@ const getSheet = async (req, res) => {
 };
 
 const getScore = async (req, res) => {
-  res.json(await sheetsService.getSheetScore(req.params.id));
+  res.json(await sheetsService.getSheetScore(req.params.id, req.userId));
 };
 
 const getTags = async (req, res) => {
@@ -19,7 +19,7 @@ const getTags = async (req, res) => {
 };
 
 const postView = async (req, res) => {
-  res.json(await sheetsService.recordView(req.params.id));
+  res.json(await sheetsService.recordView(req.params.id, req.userId));
 };
 
 const postLike = async (req, res) => {

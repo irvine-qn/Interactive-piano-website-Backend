@@ -15,6 +15,7 @@ const listSheets = async (query, userId) => {
   };
 };
 
+// Bài PRIVATE của người khác cũng báo 404 như bài không tồn tại, không để lộ là có bài này
 const sheetNotFound = (id) => new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}" not found`);
 
 const getSheetById = async (id, userId) => {
@@ -23,12 +24,12 @@ const getSheetById = async (id, userId) => {
   return { ...sheet, chords: buildChords(sheet.notes) };
 };
 
-const getSheetScore = async (id) => buildScore(await getSheetById(id));
+const getSheetScore = async (id, userId) => buildScore(await getSheetById(id, userId));
 
 const listTags = async () => ({ data: await sheetsRepository.countTags() });
 
-const recordView = async (id) => {
-  const result = await sheetsRepository.incrementViews(id);
+const recordView = async (id, userId) => {
+  const result = await sheetsRepository.incrementViews(id, userId);
   if (!result) throw sheetNotFound(id);
   return result;
 };
