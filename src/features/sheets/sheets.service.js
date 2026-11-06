@@ -16,10 +16,10 @@ const listSheets = async (query, userId, scope) => {
   };
 };
 
-// Bài PRIVATE của người khác cũng báo 404 như bài không tồn tại, không để lộ là có bài này
 const listLikedSheets = (query, userId) =>
   listSheets({ ...query, likedByUserId: userId }, userId);
 
+// Bài PRIVATE của người khác cũng báo 404 như bài không tồn tại, không để lộ là có bài này
 const sheetNotFound = (id) => new ApiError(404, "SHEET_NOT_FOUND", `Sheet "${id}" not found`);
 
 const getSheetById = async (id, userId) => {

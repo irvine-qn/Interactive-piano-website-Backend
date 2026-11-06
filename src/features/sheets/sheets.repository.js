@@ -36,7 +36,11 @@ const ORDER_BY = {
   title: { title: "asc" },
 };
 
+// Prisma đưa `contains` vào ILIKE mà không escape, nên "%" và "_" sẽ thành ký tự đại diện
 const escapeLike = (value) => value.replace(/[\\%_]/g, "\\$&");
+
+// Phạm vi danh sách (`scope`): mặc định Library = mọi bài PUBLIC.
+// Bài đã upload (U-BE-09): { uploaderId } (của tôi, cả PRIVATE) hoặc { uploaderId, visibility: "PUBLIC" } (của người khác).
 const LIBRARY_SCOPE = { visibility: "PUBLIC" };
 
 const buildWhere = ({ q, difficulty, tag, likedByUserId }, scope = LIBRARY_SCOPE) => ({
