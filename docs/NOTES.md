@@ -72,6 +72,8 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - Trường `bpm` của sheet **phải đúng BPM gốc**: Workspace dùng nó để đổi tốc độ phát (0.5x–1.5x) và hiển thị BPM thực tế. BPM sai thì BPM hiển thị cũng sai, còn tốc độ thì không bị ảnh hưởng.
 - Tên nốt dạng `C4`, `F#3` (dấu thăng `#`, không dùng giáng). FE tra phím theo tên này.
 - **Engine chuyển MIDI → nốt:** `src/features/uploads/midiToSheet.js` (chọn track, chia tay, khử nốt trùng, lọc 88 phím). Dùng chung cho tool seed (`scripts/midi-to-sheet.mjs`, `npm run sheets:build`) và Feature **Upload**. Tool seed chỉ đọc file và xử lý tham số dòng lệnh. Xem README › *Adding a new sample sheet*.
+- Engine dùng cho file người dùng tải lên nên **không tin dữ liệu vào**: kiểm tra header `MThd`, giới hạn 20 000 nốt / 20 phút, bỏ nốt ngoài 88 phím, kéo nốt dài 0 giây thành 0.05 s. Lỗi ném ra là `ApiError` 422 với mã `INVALID_MIDI` | `INVALID_TRACKS` | `NO_NOTES` | `MIDI_TOO_LARGE` và câu tiếng Anh (hiện thẳng lên giao diện). `convertMidi` trả `{ metadata, notes, warnings }`; `warnings` không lưu vào DB.
+- Gợi ý track (`pickDefaultTracks`) chỉ là gợi ý (khớp 8/9 bài mẫu so với chọn tay, sai ở `merry-christmas-mr-lawrence` vì track *music box* không thuộc họ piano), nên upload luôn cho người dùng xác nhận track.
 - Sửa engine thì chạy `npm test`: test `midiToSheet.test.js` chuyển lại 9 bài mẫu và so **từng nốt** với file JSON đã lưu, kết quả bài mẫu không được đổi (trừ khi cố ý, khi đó chạy lại `npm run sheets:build` + `npm run db:seed`).
 
 ## 4. Lỗi dễ gặp khi chạy local

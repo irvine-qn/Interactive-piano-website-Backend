@@ -35,16 +35,19 @@ const runCli = () => {
 
   const midi = readMidi(args.file);
   if (args.inspect) {
-    console.table(describeTracks(midi).filter((t) => t.noteCount > 0));
+    const infos = describeTracks(midi);
+    console.table(infos.filter((t) => t.noteCount > 0));
+    console.log(`Track gợi ý: ${pickDefaultTracks(infos).join(",") || "(không có)"}`);
     return;
   }
 
-  const sheet = convertMidi(midi, { tracks: args.tracks });
-  const left = sheet.notes.filter((n) => n.hand === "left").length;
-  console.log(`Tracks ${sheet.metadata.tracks.join(",")}: ${sheet.notes.length} nốt (trái ${left}, phải ${sheet.notes.length - left})`);
+  const { metadata, notes, warnings } = convertMidi(midi, { tracks: args.tracks });
+  const left = notes.filter((n) => n.hand === "left").length;
+  console.log(`Tracks ${metadata.tracks.join(",")}: ${notes.length} nốt (trái ${left}, phải ${notes.length - left})`);
+  warnings.forEach(({ message }) => console.warn(`⚠ ${message}`));
 
   if (args.out) {
-    fs.writeFileSync(args.out, `${JSON.stringify(sheet, null, 2)}\n`);
+    fs.writeFileSync(args.out, `${JSON.stringify({ metadata, notes }, null, 2)}\n`);
     console.log(`Đã lưu: ${path.resolve(args.out)}`);
   }
 };

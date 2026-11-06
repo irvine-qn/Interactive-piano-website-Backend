@@ -5,6 +5,15 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-06 – Engine MIDI chịu được file lạ (U-BE-02, Bình)
+
+- `midiToSheet.js` kiểm tra file (header `MThd`, file hỏng), giới hạn 20 000 nốt / 20 phút, chịu được track không có tên nhạc cụ. Lỗi là `ApiError` 422: `INVALID_MIDI`, `INVALID_TRACKS`, `NO_NOTES`, `MIDI_TOO_LARGE`.
+- Gợi ý track tốt hơn: bỏ track quá nhỏ so với track chính (khớp 8/9 bài mẫu thay vì 7/9), không có track piano thì gợi ý mọi track không phải trống.
+- `convertMidi` trả thêm `warnings` (`OUT_OF_RANGE_NOTES`, `ZERO_LENGTH_NOTES`, `TEMPO_CHANGES`). Tool seed in cảnh báo ra màn hình, JSON chỉ lưu `metadata` + `notes`.
+- Nốt dài 0 giây được kéo thành 0.05 s. Sửa 1 nốt của `chasing-kou` (C#3 ở giây 88.7 trước đây không nhìn thấy trên waterfall).
+
+**Cần làm sau khi pull:** `npm run db:seed` (cập nhật `chasing-kou`, giữ nguyên lượt xem và lượt thích).
+
 ## 2026-11-06 – Engine MIDI dùng chung (U-BE-01, Bình)
 
 - Lõi chuyển MIDI → nốt chuyển sang `src/features/uploads/midiToSheet.js` (CommonJS), dùng chung cho tool seed và Feature Upload sắp làm. `scripts/midi-to-sheet.mjs` chỉ còn phần đọc file và dòng lệnh. Kết quả 9 bài mẫu không đổi.
