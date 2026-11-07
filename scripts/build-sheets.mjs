@@ -12,8 +12,10 @@ const catalog = JSON.parse(fs.readFileSync(path.join(SHEETS_DIR, "catalog.json")
 
 const summary = catalog.map((entry) => {
   const midi = readMidi(path.join(SHEETS_DIR, entry.midiFile));
-  const sheet = convertMidi(midi, { tracks: entry.tracks });
+  const { metadata, notes, warnings } = convertMidi(midi, { tracks: entry.tracks });
+  const sheet = { metadata, notes };
   fs.writeFileSync(path.join(SHEETS_DIR, `${entry.id}.json`), `${JSON.stringify(sheet, null, 2)}\n`);
+  warnings.forEach(({ message }) => console.warn(`⚠ ${entry.id}: ${message}`));
 
   const left = sheet.notes.filter((n) => n.hand === "left").length;
   const end = sheet.notes.reduce((max, n) => Math.max(max, n.time + n.duration), 0);

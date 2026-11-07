@@ -33,6 +33,12 @@ const main = async () => {
   const catalog = readJson("catalog.json");
 
   for (const entry of catalog) {
+    // Id đã thuộc về bài người dùng upload (vd thêm bài mẫu mới trùng tên bài đã upload): không ghi đè
+    const existing = await prisma.sheet.findUnique({ where: { id: entry.id }, select: { uploaderId: true } });
+    if (existing?.uploaderId) {
+      console.warn(`✘ ${entry.id}: id đã là bài người dùng upload, bỏ qua. Đổi id trong catalog.json.`);
+      continue;
+    }
     const data = toSheetData(entry);
     await prisma.sheet.upsert({
       where: { id: entry.id },

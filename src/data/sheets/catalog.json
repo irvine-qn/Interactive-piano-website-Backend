@@ -1,7 +1,7 @@
 [
   {
     "id": "merry-christmas-mr-lawrence",
-    "midiFile": "MerryChristmasMr.Lawrence.mid",
+    "midiFile": "midi/MerryChristmasMr.Lawrence.mid",
     "tracks": [0, 1],
     "title": "Merry Christmas Mr. Lawrence",
     "subtitle": null,

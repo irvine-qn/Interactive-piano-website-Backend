@@ -13,6 +13,16 @@ const toPublicUser = (user) => ({
   role: user.role,
   isVerified: user.is_verified,
   createdAt: user.created_at,
+  bio: user.bio,
+  city: user.city,
+  country: user.country,
+  instagram: user.instagram,
+  level: user.level,
+  favoriteGenres: user.favorite_genres,
+  favoriteArtists: user.favorite_artists,
+  showPracticeStats: user.show_practice_stats,
+  avatarUrl: user.avatar_url,
+  backgroundUrl: user.background_url,
 });
 
 const signAccessToken = (user) =>
@@ -56,4 +66,4 @@ const login = async ({ identifier, password }) => {
   return { accessToken: signAccessToken(user), user: toPublicUser(user) };
 };
 
-module.exports = { register, login };
+module.exports = { register, login, toPublicUser };
