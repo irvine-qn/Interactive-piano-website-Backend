@@ -68,4 +68,33 @@ const parseLoginBody = (body = {}) => ({
   password: requireString(body.password, "password"),
 });
 
-module.exports = { parseRegisterBody, parseLoginBody };
+const parseEmailBody = (body = {}) => {
+  const email = requireString(body.email, "email").toLowerCase();
+  if (email.length > EMAIL_MAX_LENGTH || !EMAIL_REGEX.test(email)) {
+    throw new ApiError(422, "VALIDATION_FAILED", "email is invalid");
+  }
+  return { email };
+};
+
+const parseTokenBody = (body = {}) => ({ token: requireString(body.token, "token") });
+
+const parseResetPasswordBody = (body = {}) => {
+  const { token } = parseTokenBody(body);
+  const password = requireString(body.password, "password");
+  if (!PASSWORD_REGEX.test(password)) {
+    throw new ApiError(
+      422,
+      "VALIDATION_FAILED",
+      "password must be at least 8 characters with at least 1 uppercase letter and 1 digit",
+    );
+  }
+  return { token, password };
+};
+
+module.exports = {
+  parseRegisterBody,
+  parseLoginBody,
+  parseEmailBody,
+  parseTokenBody,
+  parseResetPasswordBody,
+};
