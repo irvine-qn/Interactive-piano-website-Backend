@@ -98,8 +98,29 @@ model User {
   avatarUrl      String?     @map("avatar_url") @db.VarChar(255)
   backgroundUrl  String?     @map("background_url") @db.VarChar(255)
   images         UserImage[]
+  authTokens     AuthToken[]
 
   @@map("users")
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+// Token xac thuc email va dat lai mat khau, chi luu ma bam cua token
+model AuthToken {
+  id        Int           @id @default(autoincrement())
+  userId    Int           @map("user_id")
+  type      AuthTokenType
+  tokenHash String        @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime      @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime?     @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("auth_tokens")
 }
 
 // Ảnh hồ sơ tạm lưu trong PostgreSQL, sau này chuyển sang Cloudinary

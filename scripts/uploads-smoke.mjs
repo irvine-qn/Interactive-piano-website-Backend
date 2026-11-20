@@ -56,7 +56,7 @@ try {
     users.push(user);
   }
   const [owner, other] = users.map((user) => jwt.sign({ sub: user.id, username: user.username, role: "user" }, JWT_SECRET));
-  const [ownerUser, otherUser] = users;
+  const [ownerUser] = users;
   const sampleCount = await prisma.sheet.count({ where: { uploaderId: null } });
 
   // 1. Phân tích + tạo bài

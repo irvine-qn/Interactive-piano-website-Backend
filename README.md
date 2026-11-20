@@ -213,11 +213,20 @@ JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRES_IN=7d
 
 FILE_STORAGE=postgres
+
+APP_URL=http://localhost:5173
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=Fiano <no-reply@fiano.local>
 ```
 
 > Do not commit `.env` to GitHub because it may contain sensitive information. Set `JWT_SECRET` to your own long random string (it signs login tokens).
 
 `FILE_STORAGE` chooses where original MIDI files of uploaded sheets are stored (`src/lib/fileStorage.js`). Only `postgres` (table `sheet_files`) exists for now; a cloud option will be added for deployment.
+
+`APP_URL` is the Frontend address used in email links. `SMTP_*` and `MAIL_FROM` configure Nodemailer. Leave `SMTP_HOST` empty locally and the email (with its link) is printed to the server console instead of being sent. With `NODE_ENV=production` the server refuses to start without `SMTP_HOST`. For Gmail use `smtp.gmail.com`, port `587` and an **App Password** (needs 2-Step Verification), not your normal password.
 
 If port `5432` is already used by another PostgreSQL on your machine, change `POSTGRES_PORT` and the port inside `DATABASE_URL` to the same free port (for example `5433`).
 
@@ -589,6 +598,19 @@ Errors: `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED` (messag
 
 `identifier` is the username **or** the email (case-insensitive). Response `200` has the same shape as register. Wrong username/email or password: `401 INVALID_CREDENTIALS` (same message for both, so the API does not reveal which accounts exist).
 
+### Email verification and password reset
+
+All `/auth/*` routes are rate limited to 20 requests per 15 minutes per IP (`429 TOO_MANY_REQUESTS`). Tokens are random, single use and stored only as a SHA-256 hash (table `auth_tokens`). Email links point to the Frontend pages `/verify-email` and `/reset-password`.
+
+| Method | Path | Auth | Body | Notes |
+| --- | --- | --- | --- | --- |
+| POST | `/api/v1/auth/forgot-password` | No | `{ email }` | Only for verified accounts (`403 EMAIL_NOT_VERIFIED` otherwise). Unknown email still returns `200`. Link valid 30 minutes |
+| POST | `/api/v1/auth/reset-password` | No | `{ token, password }` | Same password rules as register. `400 INVALID_TOKEN` if used or expired |
+| POST | `/api/v1/auth/verify-email` | No | `{ token }` | Sets `isVerified`. Link valid 24 hours |
+| POST | `/api/v1/auth/verify-email/resend` | Yes | none | `409 ALREADY_VERIFIED` if already verified |
+
+Register sends the verification email automatically. Full details: [`docs/api.md`](docs/api.md).
+
 ### Regression test
 
 After changing Auth code, compare responses with a baseline taken before the change (creates a few test accounts in the current database, dev only):
@@ -773,6 +795,10 @@ Example endpoints:
 ```text
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
+POST   /api/v1/auth/forgot-password
+POST   /api/v1/auth/reset-password
+POST   /api/v1/auth/verify-email
+POST   /api/v1/auth/verify-email/resend
 
 GET    /api/v1/users/me
 
