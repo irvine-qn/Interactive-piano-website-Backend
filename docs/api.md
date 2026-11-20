@@ -38,13 +38,16 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | 400 | `FILE_REQUIRED` | Upload không gửi file |
 | 400 | `UNEXPECTED_FILE` | Upload gửi nhiều file hoặc sai tên trường (phải là `file`) |
 | 400 | `INVALID_UPLOAD` | Request multipart hỏng |
+| 400 | `INVALID_TOKEN` | Link xác thực email hoặc đặt lại mật khẩu sai, đã dùng hoặc đã hết hạn |
 | 401 | `UNAUTHORIZED` | Thiếu hoặc sai token, hoặc tài khoản trong token không còn tồn tại |
 | 401 | `INVALID_CREDENTIALS` | Sai tài khoản hoặc mật khẩu |
+| 403 | `EMAIL_NOT_VERIFIED` | Quên mật khẩu với tài khoản chưa xác thực email |
 | 404 | `NOT_FOUND` | Route không tồn tại |
-| 404 | `USER_NOT_FOUND` | Người dùng không tồn tại (`/users/:id/sheets`) |
+| 404 | `USER_NOT_FOUND` | Người dùng không tồn tại (`/users/:id/sheets`, `/auth/verify-email/resend`) |
 | 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại, hoặc là bài `PRIVATE` của người khác (trả giống hệt để không lộ là có bài) |
 | 409 | `USERNAME_TAKEN` | Username đã được dùng |
 | 409 | `EMAIL_TAKEN` | Email đã được dùng |
+| 409 | `ALREADY_VERIFIED` | Gửi lại email xác thực khi email đã xác thực |
 | 409 | `SHEET_ID_TAKEN` | Không tạo được id cho bài (rất hiếm, nhiều người cùng tạo bài cùng tên), gửi lại là được |
 | 413 | `FILE_TOO_LARGE` | File upload lớn hơn 1 MB |
 | 415 | `UNSUPPORTED_FILE` | File upload không phải MIDI (sai đuôi hoặc không bắt đầu bằng `MThd`) |
@@ -53,6 +56,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | 422 | `INVALID_TRACKS` | Danh sách track sai định dạng, hoặc track không tồn tại / không có nốt |
 | 422 | `NO_NOTES` | Các track đã chọn không có nốt nào trong 88 phím |
 | 422 | `MIDI_TOO_LARGE` | Bài quá 20 000 nốt hoặc quá 20 phút |
+| 429 | `TOO_MANY_REQUESTS` | Gọi API Auth quá 20 lần trong 15 phút từ cùng một IP |
 | 500 | `INTERNAL_ERROR` | Lỗi server, thường do PostgreSQL chưa chạy |
 
 ## Danh sách endpoint
@@ -61,6 +65,10 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | --- | --- | --- | --- |
 | POST | `/auth/register` | Không | Đăng ký |
 | POST | `/auth/login` | Không | Đăng nhập |
+| POST | `/auth/forgot-password` | Không | Gửi link đặt lại mật khẩu qua email |
+| POST | `/auth/reset-password` | Không | Đặt mật khẩu mới bằng token trong link |
+| POST | `/auth/verify-email` | Không | Xác thực email bằng token trong link |
+| POST | `/auth/verify-email/resend` | Bắt buộc | Gửi lại email xác thực |
 | GET | `/users/me` | Bắt buộc | Thông tin tài khoản đang đăng nhập |
 | PUT | `/users/profile` | Bắt buộc | Cập nhật hồ sơ |
 | PUT | `/users/profile/images/:kind` | Bắt buộc | Tải ảnh (`avatar` hoặc `background`), multipart trường `file`, tối đa 5 MB; trả về user |
@@ -133,7 +141,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 }
 ```
 
-**Lỗi:** `400 INVALID_JSON`, `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED`.
+**Lỗi:** `400 INVALID_JSON`, `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
 
 ### POST `/auth/login`
 
@@ -151,7 +159,66 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 
 **Thành công: `200`**, cùng dạng với response của đăng ký.
 
-**Lỗi:** `400 INVALID_JSON`, `401 INVALID_CREDENTIALS`, `422 VALIDATION_FAILED`.
+**Lỗi:** `400 INVALID_JSON`, `401 INVALID_CREDENTIALS`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
+
+### Rate limit
+
+Mọi route `/auth/*` giới hạn **20 request trong 15 phút cho mỗi IP**, đếm riêng từng route. Vượt giới hạn trả `429 TOO_MANY_REQUESTS`, header `RateLimit` theo chuẩn draft-7.
+
+### Email và token
+
+- Đăng ký thành công thì Backend tự gửi email xác thực. Gửi mail lỗi không làm hỏng đăng ký.
+- Link trong email trỏ về Frontend: `${APP_URL}/verify-email?token=...` và `${APP_URL}/reset-password?token=...`.
+- Token ngẫu nhiên 32 byte, DB chỉ lưu mã băm SHA-256 (bảng `auth_tokens`). Mỗi token **dùng một lần**; tạo token mới cùng loại thì token cũ mất hiệu lực.
+- Hạn: xác thực email **24 giờ**, đặt lại mật khẩu **30 phút** (`auth.constants.js`).
+- Chưa cấu hình SMTP thì nội dung email được in ra console của server (chỉ để thử local).
+
+### POST `/auth/forgot-password`
+
+| Trường | Kiểu | Bắt buộc | Ghi chú |
+| --- | --- | --- | --- |
+| `email` | string | Có | Email hợp lệ, được chuyển về chữ thường |
+
+**Thành công: `200`**. Email không tồn tại cũng trả cùng câu này để không lộ tài khoản nào đã đăng ký.
+
+```json
+{ "message": "If this email is registered, a password reset link has been sent." }
+```
+
+**Lỗi:** `403 EMAIL_NOT_VERIFIED` (tài khoản có thật nhưng chưa xác thực email, `README_main.md` mục 3.5), `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
+
+### POST `/auth/reset-password`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- |
+| `token` | string | Có | Lấy từ link trong email |
+| `password` | string | Có | Cùng quy tắc với đăng ký |
+
+**Thành công: `200`**
+
+```json
+{ "message": "Your password has been updated. You can log in now." }
+```
+
+**Lỗi:** `400 INVALID_TOKEN`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`. Token đăng nhập (JWT) đã cấp trước đó **vẫn còn hiệu lực** tới khi hết hạn.
+
+### POST `/auth/verify-email`
+
+| Trường | Kiểu | Bắt buộc |
+| --- | --- | --- |
+| `token` | string | Có |
+
+**Thành công: `200`** `{ "message": "Your email has been verified." }`. Sau đó `user.isVerified` là `true`.
+
+**Lỗi:** `400 INVALID_TOKEN`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
+
+### POST `/auth/verify-email/resend`
+
+Không có body. Cần token đăng nhập.
+
+**Thành công: `200`** `{ "message": "A verification link has been sent to your email." }`
+
+**Lỗi:** `401 UNAUTHORIZED`, `404 USER_NOT_FOUND`, `409 ALREADY_VERIFIED`, `429 TOO_MANY_REQUESTS`.
 
 ---
 

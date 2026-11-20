@@ -18,6 +18,7 @@ Hướng dẫn cài đặt, chạy server và tài liệu API nằm ở [README]
 | User profile + User edit profile (API đọc/sửa thông tin người dùng, ảnh avatar) | **Quỳnh** | Bình **không sửa** |
 | User upload sheet (`features/uploads/*`, kể cả `/users/me/sheets`, `/users/:id/sheets`), `src/lib/fileStorage.js`, `scripts/uploads-smoke.mjs` | **Bình** | Quỳnh **không sửa**. Trang profile lấy bài của một người qua `GET /users/:id/sheets` (đã có) |
 | Bài đã lưu của người dùng | Chưa phân công | |
+| Xác thực email, quên / đặt lại mật khẩu (`features/auth/auth.repository.js`, `src/lib/mailer.js`, bảng `auth_tokens`) | **Quỳnh** | Thêm ngày 2026-11-20, giữ nguyên API `register` / `login` |
 | `src/app.js`, `src/server.js`, `src/config/env.js`, `src/common/*` | Cả hai | Chỉ sửa nếu không làm hỏng route của người kia |
 
 > Phân công giữa **Nguyễn Thanh Bình** và **Nguyễn Thị Ngọc Quỳnh**. Khi đọc tài liệu này để làm việc, chỉ làm phần của người đang được giao; phần của người kia thì không sửa, cần đổi thì báo để người đó làm.
@@ -63,6 +64,8 @@ Trước đây sheet là file JSON đọc trực tiếp. Bây giờ bảng `shee
 - Gặp lời nhắc reset kèm *All data will be lost*: **không đồng ý**. Hầu hết trường hợp dùng `npm run db:deploy` hoặc `npx prisma migrate resolve --applied <tên_migration>` là đủ (README 6.3).
 - Khoá chính `users.id` là số tự tăng (`SERIAL`), còn `sheets.id` là slug chữ (`fur-elise`).
 - File MIDI gốc của bài upload (`sheet_files`) **chỉ đọc/ghi qua `src/lib/fileStorage.js`**, không gọi `prisma.sheetFile` trực tiếp: khi deploy sẽ chuyển sang Cloud.
+- Token xác thực email và đặt lại mật khẩu **chỉ lưu mã băm** (`auth_tokens.token_hash`). Đánh dấu đã dùng và cập nhật user nằm trong **cùng một transaction** (`useToken` ở `auth.repository.js`): đừng tách ra, hai request cùng token có thể cùng thành công.
+- Gửi email **chỉ qua `src/lib/mailer.js`**. Chưa có `SMTP_HOST` thì email in ra console, nên đừng để log server lộ ra ngoài khi chạy thử với dữ liệu thật.
 - Truy vấn bài theo người xem **luôn dùng `visibleTo(userId)`** (`sheets.repository.js`). Đừng tự viết `{ uploaderId: userId }`: khách có `userId` là `undefined` và Prisma coi `undefined` là *không lọc*, lộ mọi bài `PRIVATE`. API mới đọc bài theo id thì gắn `optionalAuth` để người upload mở được bài `PRIVATE` của mình.
 
 ## 3. Dữ liệu bài nhạc (`sheets.notes`) – FE phụ thuộc vào định dạng này
@@ -90,6 +93,9 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 | `db:migrate` đòi reset, báo mất dữ liệu | DB tạo trước khi có migration `add_users` | README 6.3, **không** đồng ý reset |
 | Không khởi động được Postgres, lỗi port 5432 | Máy đã có Postgres khác | Đổi `POSTGRES_PORT` và port trong `DATABASE_URL` cho giống nhau |
 | Code báo thiếu field/model Prisma sau khi pull | Chưa generate lại client | `npm run db:generate` (hoặc `npm install`) |
+| `Cannot read properties of undefined (reading 'deleteMany')` ở `auth.repository.js` | Đã chạy migration nhưng chưa generate lại Prisma client | `npm run db:generate` rồi khởi động lại server |
+| Không nhận được email xác thực / đặt lại mật khẩu | Chưa đặt `SMTP_HOST`, email đang in ra console | Xem terminal chạy server, hoặc điền `SMTP_*` trong `.env` |
+| API Auth trả `429 TOO_MANY_REQUESTS` khi đang thử | Vượt 20 request / 15 phút | Chờ 15 phút hoặc khởi động lại server (bộ đếm nằm trong RAM) |
 | Đăng ký/đăng nhập trả `500`, log server có `secretOrPrivateKey must have a value` | Thiếu `JWT_SECRET` trong `.env` (không có giá trị mặc định) | Copy từ `.env.example` và đặt chuỗi ngẫu nhiên |
 
 ## 5. Kiểm tra trước khi tạo PR
@@ -97,7 +103,7 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 1. `npx prisma migrate status` → `Database schema is up to date!`
 2. `npm start`, mở `http://localhost:5000` → `{ "message": "Piano Backend is running!" }`
 3. Thử `GET /api/v1/piano`, `GET /api/v1/sheets`, `GET /api/v1/sheets/tags`, `GET /api/v1/sheets/fur-elise`.
-4. `npm test` (không cần DB). Có sửa sheets / uploads: `npm run uploads:smoke` (cần DB đang chạy, tự dọn dữ liệu thử).
+4. `npm run lint` và `npm test` (không cần DB). Có sửa sheets / uploads: `npm run uploads:smoke` (cần DB đang chạy, tự dọn dữ liệu thử).
 5. Có sửa Auth: chạy `scripts/auth-regression.mjs --compare` với baseline chụp trước khi sửa.
 6. Có thêm/đổi API: cập nhật README mục *Available API* và `docs/api.md`.
 
@@ -106,4 +112,5 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 - **Upload MIDI**: Backend xong. Còn lưu file trên Cloud khi deploy (U-BE-12: thêm driver cho `fileStorage.js`, dùng chung dịch vụ với ảnh hồ sơ, cần thống nhất dịch vụ).
 - **Ảnh hồ sơ:** đang tạm lưu trong PostgreSQL (`user_images`), client chỉ dùng URL. Khi deploy chuyển sang Cloud.
 - **Bài đã lưu của người dùng**: chưa phân công.
-- **Kết quả đánh giá code (2026-11-07):** AU-01 → AU-17 trong `TASK_DECOMPOSITION.md` (repo FrontEnd). **Chưa nên deploy công khai** khi chưa có rate limit, hạn mức upload và giới hạn CORS (AU-03 → AU-05).
+- **Auth còn thiếu:** `POST /auth/google` (cần Google Client ID); thu hồi token đăng nhập sau khi đổi mật khẩu (AU-06); rate limit cho upload, `view`, `practice-sessions` (AU-03).
+- **Kết quả đánh giá code (2026-11-07):** AU-01 → AU-17 trong `TASK_DECOMPOSITION.md` (repo FrontEnd). **Chưa nên deploy công khai** khi chưa có hạn mức upload và giới hạn CORS (AU-04, AU-05). Rate limit mới có cho `/auth/*` (AU-03 làm một phần).

@@ -5,6 +5,18 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-20 – Xác thực email, quên mật khẩu, rate limit và lint
+
+- **API mới** (chi tiết `docs/api.md` › Auth): `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/verify-email`, `POST /auth/verify-email/resend` (cần đăng nhập). Đăng ký thành công thì tự gửi email xác thực.
+- **Quên mật khẩu** chỉ gửi cho tài khoản đã xác thực email, chưa xác thực trả `403 EMAIL_NOT_VERIFIED` (`README_main.md` mục 3.5). Link đặt lại hạn 30 phút, link xác thực hạn 24 giờ, mỗi link dùng một lần.
+- **Database:** migration `add_auth_tokens` (bảng `auth_tokens`, enum `AuthTokenType`). Chỉ lưu mã băm SHA-256 của token. Chỉ thêm bảng, dữ liệu cũ giữ nguyên.
+- **Gửi email:** `src/lib/mailer.js` (Nodemailer). Biến môi trường mới: `APP_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (xem `.env.example`). Để trống `SMTP_HOST` thì email được in ra console. `NODE_ENV=production` mà thiếu `SMTP_HOST` thì server không khởi động.
+- **Rate limit** (`express-rate-limit`): mọi route `/auth/*` tối đa 20 request / 15 phút / IP, vượt thì `429 TOO_MANY_REQUESTS`.
+- **Lint:** thêm ESLint 9 (`eslint.config.js`, lệnh `npm run lint`). Sửa 1 biến thừa trong `scripts/uploads-smoke.mjs`.
+- **Dọn dẹp:** xoá các thư mục trống `src/common/utils`, `src/features/auth/strategies`, `src/features/collections`, `src/features/sheets/helpers`, `src/types`.
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy` (đã gồm `prisma generate`), thêm các biến mới vào `.env` theo `.env.example`, rồi khởi động lại server.
+
 ## 2026-11-07 – Ảnh hồ sơ, lịch sử chơi và dọn sau merge
 
 - **Ảnh hồ sơ:** thêm API tải, xoá và lấy ảnh `avatar` / `background`. Nhận file bằng `multer`, `sharp` kiểm tra và đổi sang WebP, tạm lưu trong PostgreSQL (bảng `user_images`, migration `add_user_images`). User trả thêm `avatarUrl`, `backgroundUrl`.
