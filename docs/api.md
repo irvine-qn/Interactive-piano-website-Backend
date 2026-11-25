@@ -18,7 +18,7 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | Mức | Hành vi |
 | --- | --- |
 | Không | Không cần token |
-| Tùy chọn | Có token hợp lệ thì `likedByMe` theo người dùng đó. Không có hoặc sai token vẫn trả `200`, `likedByMe` là `false` |
+| Tùy chọn | Có token hợp lệ thì `likedByMe`, `isMine` theo người dùng đó và người upload xem được bài `PRIVATE` của mình. Không có hoặc sai token vẫn trả `200` như khách |
 | Bắt buộc | Không có hoặc sai token trả `401 UNAUTHORIZED` |
 
 ### Định dạng lỗi
@@ -35,13 +35,28 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | HTTP | `code` | Khi nào |
 | --- | --- | --- |
 | 400 | `INVALID_JSON` | Body không phải JSON hợp lệ |
+| 400 | `FILE_REQUIRED` | Upload không gửi file |
+| 400 | `UNEXPECTED_FILE` | Upload gửi nhiều file hoặc sai tên trường (phải là `file`) |
+| 400 | `INVALID_UPLOAD` | Request multipart hỏng |
+| 400 | `INVALID_TOKEN` | Link xác thực email hoặc đặt lại mật khẩu sai, đã dùng hoặc đã hết hạn |
 | 401 | `UNAUTHORIZED` | Thiếu hoặc sai token, hoặc tài khoản trong token không còn tồn tại |
 | 401 | `INVALID_CREDENTIALS` | Sai tài khoản hoặc mật khẩu |
+| 403 | `EMAIL_NOT_VERIFIED` | Quên mật khẩu với tài khoản chưa xác thực email |
 | 404 | `NOT_FOUND` | Route không tồn tại |
-| 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại |
+| 404 | `USER_NOT_FOUND` | Người dùng không tồn tại (`/users/:id/sheets`, `/auth/verify-email/resend`) |
+| 404 | `SHEET_NOT_FOUND` | Bài nhạc không tồn tại, hoặc là bài `PRIVATE` của người khác (trả giống hệt để không lộ là có bài) |
 | 409 | `USERNAME_TAKEN` | Username đã được dùng |
 | 409 | `EMAIL_TAKEN` | Email đã được dùng |
-| 422 | `VALIDATION_FAILED` | Dữ liệu gửi lên không hợp lệ |
+| 409 | `ALREADY_VERIFIED` | Gửi lại email xác thực khi email đã xác thực |
+| 409 | `SHEET_ID_TAKEN` | Không tạo được id cho bài (rất hiếm, nhiều người cùng tạo bài cùng tên), gửi lại là được |
+| 413 | `FILE_TOO_LARGE` | File upload lớn hơn 1 MB |
+| 415 | `UNSUPPORTED_FILE` | File upload không phải MIDI (sai đuôi hoặc không bắt đầu bằng `MThd`) |
+| 422 | `VALIDATION_FAILED` | Dữ liệu gửi lên không hợp lệ. Ở `POST /sheets` có `details.field` là tên trường bị lỗi |
+| 422 | `INVALID_MIDI` | File MIDI hỏng, không đọc được |
+| 422 | `INVALID_TRACKS` | Danh sách track sai định dạng, hoặc track không tồn tại / không có nốt |
+| 422 | `NO_NOTES` | Các track đã chọn không có nốt nào trong 88 phím |
+| 422 | `MIDI_TOO_LARGE` | Bài quá 20 000 nốt hoặc quá 20 phút |
+| 429 | `TOO_MANY_REQUESTS` | Gọi API Auth quá 20 lần trong 15 phút từ cùng một IP |
 | 500 | `INTERNAL_ERROR` | Lỗi server, thường do PostgreSQL chưa chạy |
 
 ## Danh sách endpoint
@@ -50,14 +65,32 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 | --- | --- | --- | --- |
 | POST | `/auth/register` | Không | Đăng ký |
 | POST | `/auth/login` | Không | Đăng nhập |
+| POST | `/auth/forgot-password` | Không | Gửi link đặt lại mật khẩu qua email |
+| POST | `/auth/reset-password` | Không | Đặt mật khẩu mới bằng token trong link |
+| POST | `/auth/verify-email` | Không | Xác thực email bằng token trong link |
+| POST | `/auth/verify-email/resend` | Bắt buộc | Gửi lại email xác thực |
+| GET | `/users/me` | Bắt buộc | Thông tin tài khoản đang đăng nhập |
+| PUT | `/users/profile` | Bắt buộc | Cập nhật hồ sơ |
+| PUT | `/users/profile/images/:kind` | Bắt buộc | Tải ảnh (`avatar` hoặc `background`), multipart trường `file`, tối đa 5 MB; trả về user |
+| DELETE | `/users/profile/images/:kind` | Bắt buộc | Xoá ảnh; trả về user |
+| GET | `/users/:id/images/:kind` | Không | Lấy ảnh |
 | GET | `/piano` | Không | Cấu hình đàn và bảng phím |
 | GET | `/frequencies` | Không | Tần số theo tên nốt |
 | GET | `/sheets` | Tùy chọn | Danh sách bài nhạc |
 | GET | `/sheets/tags` | Không | Danh sách thể loại |
+| GET | `/sheets/liked` | Bắt buộc | Danh sách bài người dùng đã thích |
+| GET | `/sheets/practice-history` | Bắt buộc | Lịch sử chơi của người dùng |
 | GET | `/sheets/:id` | Tùy chọn | Chi tiết bài nhạc |
-| GET | `/sheets/:id/score` | Không | Bản nhạc đã chuyển sang vị trí trên khuông |
-| POST | `/sheets/:id/view` | Không | Tăng lượt xem |
+| GET | `/sheets/:id/score` | Tùy chọn | Bản nhạc đã chuyển sang vị trí trên khuông |
+| POST | `/sheets/:id/view` | Tùy chọn | Tăng lượt xem |
 | POST | `/sheets/:id/like` | Bắt buộc | Thích hoặc bỏ thích |
+| POST | `/uploads/midi/analyze` | Bắt buộc | Phân tích file MIDI trước khi tạo bài (không lưu gì) |
+| POST | `/sheets` | Bắt buộc | Tạo bài từ file MIDI |
+| PATCH | `/sheets/:id` | Bắt buộc | Sửa thông tin bài của mình |
+| DELETE | `/sheets/:id` | Bắt buộc | Xoá bài của mình |
+| GET | `/users/me/sheets` | Bắt buộc | Bài tôi đã upload (cả `PRIVATE`) |
+| GET | `/users/:id/sheets` | Tùy chọn | Bài `PUBLIC` của một người dùng (trang profile) |
+| POST | `/sheets/:id/practice-sessions` | Bắt buộc | Lưu một lượt chơi |
 
 ---
 
@@ -93,12 +126,22 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
     "displayName": "Nguyen Van A",
     "role": "user",
     "isVerified": false,
-    "createdAt": "2026-11-05T07:00:00.000Z"
+    "createdAt": "2026-11-05T07:00:00.000Z",
+    "bio": null,
+    "city": null,
+    "country": null,
+    "instagram": null,
+    "level": null,
+    "favoriteGenres": [],
+    "favoriteArtists": [],
+    "showPracticeStats": true,
+    "avatarUrl": null,
+    "backgroundUrl": null
   }
 }
 ```
 
-**Lỗi:** `400 INVALID_JSON`, `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED`.
+**Lỗi:** `400 INVALID_JSON`, `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
 
 ### POST `/auth/login`
 
@@ -116,7 +159,116 @@ Riêng kiểm tra server nằm ngoài Base URL: `GET http://localhost:5000/` tr�
 
 **Thành công: `200`**, cùng dạng với response của đăng ký.
 
-**Lỗi:** `400 INVALID_JSON`, `401 INVALID_CREDENTIALS`, `422 VALIDATION_FAILED`.
+**Lỗi:** `400 INVALID_JSON`, `401 INVALID_CREDENTIALS`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
+
+### Rate limit
+
+Mọi route `/auth/*` giới hạn **20 request trong 15 phút cho mỗi IP**, đếm riêng từng route. Vượt giới hạn trả `429 TOO_MANY_REQUESTS`, header `RateLimit` theo chuẩn draft-7.
+
+### Email và token
+
+- Đăng ký thành công thì Backend tự gửi email xác thực. Gửi mail lỗi không làm hỏng đăng ký.
+- Link trong email trỏ về Frontend: `${APP_URL}/verify-email?token=...` và `${APP_URL}/reset-password?token=...`.
+- Token ngẫu nhiên 32 byte, DB chỉ lưu mã băm SHA-256 (bảng `auth_tokens`). Mỗi token **dùng một lần**; tạo token mới cùng loại thì token cũ mất hiệu lực.
+- Hạn: xác thực email **24 giờ**, đặt lại mật khẩu **30 phút** (`auth.constants.js`).
+- Chưa cấu hình SMTP thì nội dung email được in ra console của server (chỉ để thử local).
+
+### POST `/auth/forgot-password`
+
+| Trường | Kiểu | Bắt buộc | Ghi chú |
+| --- | --- | --- | --- |
+| `email` | string | Có | Email hợp lệ, được chuyển về chữ thường |
+
+**Thành công: `200`**. Email không tồn tại cũng trả cùng câu này để không lộ tài khoản nào đã đăng ký.
+
+```json
+{ "message": "If this email is registered, a password reset link has been sent." }
+```
+
+**Lỗi:** `403 EMAIL_NOT_VERIFIED` (tài khoản có thật nhưng chưa xác thực email, `README_main.md` mục 3.5), `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
+
+### POST `/auth/reset-password`
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- |
+| `token` | string | Có | Lấy từ link trong email |
+| `password` | string | Có | Cùng quy tắc với đăng ký |
+
+**Thành công: `200`**
+
+```json
+{ "message": "Your password has been updated. You can log in now." }
+```
+
+**Lỗi:** `400 INVALID_TOKEN`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`. Token đăng nhập (JWT) đã cấp trước đó **vẫn còn hiệu lực** tới khi hết hạn.
+
+### POST `/auth/verify-email`
+
+| Trường | Kiểu | Bắt buộc |
+| --- | --- | --- |
+| `token` | string | Có |
+
+**Thành công: `200`** `{ "message": "Your email has been verified." }`. Sau đó `user.isVerified` là `true`.
+
+**Lỗi:** `400 INVALID_TOKEN`, `422 VALIDATION_FAILED`, `429 TOO_MANY_REQUESTS`.
+
+### POST `/auth/verify-email/resend`
+
+Không có body. Cần token đăng nhập.
+
+**Thành công: `200`** `{ "message": "A verification link has been sent to your email." }`
+
+**Lỗi:** `401 UNAUTHORIZED`, `404 USER_NOT_FOUND`, `409 ALREADY_VERIFIED`, `429 TOO_MANY_REQUESTS`.
+
+---
+
+## Users
+
+### GET `/users/me`
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
+
+**Lỗi:** `401 UNAUTHORIZED`.
+
+### PUT `/users/profile`
+
+Chỉ nhận các trường dưới đây, trường khác bị bỏ qua. Trường không gửi thì giữ nguyên, chuỗi rỗng thì xoá giá trị.
+
+| Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- |
+| `displayName` | string | Có | Tối đa 100 ký tự |
+| `bio` | string | Không | Tối đa 160 ký tự |
+| `city` | string | Không | Tối đa 100 ký tự |
+| `country` | string | Không | Tối đa 100 ký tự |
+| `instagram` | string | Không | Tên tài khoản, chỉ chữ, số, `.`, `_`, tối đa 30 ký tự. Có thể gửi kèm `@` |
+| `level` | string | Không | `BEGINNER`, `INTERMEDIATE`, `ADVANCED`, `PROFESSIONAL` |
+| `favoriteGenres` | string[] | Không | Tối đa 10 mục, mỗi mục tối đa 50 ký tự |
+| `favoriteArtists` | string[] | Không | Tối đa 10 mục, mỗi mục tối đa 50 ký tự |
+| `showPracticeStats` | boolean | Không | |
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký.
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### PUT `/users/profile/images/:kind`
+
+**Xác thực:** bắt buộc. `kind` là `avatar` hoặc `background`. Gửi `multipart/form-data`, ảnh ở trường `file`, tối đa 5 MB. Ảnh được đổi sang WebP: avatar cắt vuông 512×512, ảnh bìa rộng tối đa 1600px.
+
+**Thành công: `200`**, cùng dạng với `user` trong response của đăng ký. `avatarUrl` / `backgroundUrl` là đường dẫn tương đối, vd `/api/v1/users/1/images/avatar?v=1793987459244`.
+
+**Lỗi:** `400 FILE_REQUIRED`, `400 INVALID_UPLOAD`, `401 UNAUTHORIZED`, `404 IMAGE_NOT_FOUND` (`kind` sai), `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_IMAGE`.
+
+### DELETE `/users/profile/images/:kind`
+
+**Xác thực:** bắt buộc. **Thành công: `200`**, trả về `user` với URL ảnh đó là `null`.
+
+**Lỗi:** `401 UNAUTHORIZED`, `404 IMAGE_NOT_FOUND` (`kind` sai).
+
+### GET `/users/:id/images/:kind`
+
+**Xác thực:** không. **Thành công: `200`**, nội dung là ảnh `image/webp`.
+
+**Lỗi:** `404 IMAGE_NOT_FOUND`.
 
 ---
 
@@ -198,6 +350,12 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
 | `coverColor` | string | `yellow`, `pink`, `mint`, `lavender` |
 | `createdAt` | string | ISO 8601 |
 | `likedByMe` | boolean | |
+| `visibility` | string | `PUBLIC` hoặc `PRIVATE` (chỉ người upload thấy) |
+| `uploaderId` | number hoặc null | `null` = bài mẫu |
+| `uploader` | object hoặc null | `{ id, displayName }` của người upload (chưa đặt tên hiển thị thì là username), `null` = bài mẫu |
+| `isMine` | boolean | Bài do người đang đăng nhập upload |
+
+**Quyền xem (U-BE-08):** `GET /sheets` và `GET /sheets/tags` chỉ tính bài `PUBLIC` (kể cả với người upload; bài `PRIVATE` của tôi xem ở danh sách bài đã upload). `GET /sheets/:id`, `/score`, `/view`, `/like` với bài `PRIVATE` của người khác trả `404 SHEET_NOT_FOUND`.
 
 ### GET `/sheets`
 
@@ -254,6 +412,46 @@ Cấu hình đàn và bảng phím. Ví dụ dưới đây đã rút gọn các 
   ]
 }
 ```
+
+### GET `/sheets/liked`
+
+**Xác thực:** bắt buộc. Query và response giống `GET /sheets`, chỉ gồm các bài người dùng đang thích.
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### GET `/sheets/practice-history`
+
+**Xác thực:** bắt buộc. Lượt chơi mới nhất đứng đầu. Query `page`, `pageSize` giống `GET /sheets`.
+
+**Thành công: `200`**
+
+```json
+{
+  "data": [
+    { "id": 1, "sheetId": "fur-elise", "title": "Für Elise", "composer": "Beethoven", "coverColor": "yellow", "noteCount": 120, "durationSec": 95 }
+  ],
+  "meta": { "page": 1, "pageSize": 8, "total": 1, "totalPages": 1 }
+}
+```
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### POST `/sheets/:id/practice-sessions`
+
+**Xác thực:** bắt buộc.
+
+| Trường | Kiểu | Ràng buộc |
+| --- | --- | --- |
+| `noteCount` | integer | Số phím đã bấm, từ 5 đến 1000000. Dưới 5 phím không được lưu |
+| `durationSec` | integer | Thời lượng thực sự chơi tính bằng giây, từ 0 đến 86400 |
+
+**Thành công: `201`**
+
+```json
+{ "id": 1, "noteCount": 120, "durationSec": 95 }
+```
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`, `422 VALIDATION_FAILED`.
 
 ### GET `/sheets/:id`
 
@@ -378,3 +576,143 @@ Tăng lượt xem thêm 1. Không cần body.
 ```
 
 **Lỗi:** `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`.
+
+## Uploads
+
+Upload bài là 2 bước: phân tích file (`/uploads/midi/analyze`, không lưu gì) để người dùng xem và sửa lựa chọn track, rồi tạo bài (`POST /sheets`, gửi lại file cùng thông tin bài). Gửi file bằng `multipart/form-data`, trường `file`, đuôi `.mid`/`.midi`, tối đa 1 MB.
+
+### POST `/uploads/midi/analyze`
+
+**Xác thực:** bắt buộc.
+
+**Form:**
+
+| Trường | Bắt buộc | Mô tả |
+| --- | --- | --- |
+| `file` | Có | File MIDI |
+| `tracks` | Không | Các track đang chọn, vd `0,1` (hoặc nhiều trường `tracks`). Không gửi thì dùng track gợi ý. Gọi lại khi người dùng đổi lựa chọn để số nốt, thời lượng, độ khó và cảnh báo tính theo các track đó |
+
+**Thành công: `200`**
+
+```json
+{
+  "fileName": "fur-elise.mid",
+  "suggestedTitle": "Fur Elise",
+  "suggestedDifficulty": "EASY",
+  "bpm": 120,
+  "timeSignature": [3, 4],
+  "keySignature": "C major",
+  "durationSec": 33,
+  "noteCount": 104,
+  "tracks": [
+    {
+      "index": 0,
+      "name": "",
+      "instrument": "acoustic grand piano",
+      "program": 0,
+      "isPiano": true,
+      "isPercussion": false,
+      "noteCount": 86,
+      "minNote": "C4",
+      "maxNote": "F5",
+      "suggested": true
+    }
+  ],
+  "suggestedTracks": [0, 1],
+  "selectedTracks": [0, 1],
+  "warnings": []
+}
+```
+
+- `tracks`: chỉ các track có nốt. `instrument` có thể `null`. `suggested` = được gợi ý chọn (track piano, bỏ track trống và track quá nhỏ so với track chính).
+- `suggestedTitle`: lấy từ tên file (tên ghi trong file MIDI thường rỗng hoặc là tên nhạc cụ).
+- `suggestedDifficulty`: ước lượng từ mật độ nốt (khớp 8/9 bài mẫu), người dùng sửa được.
+- `warnings`: `[{ code, count, message }]`, `message` hiện thẳng lên giao diện. Mã: `OUT_OF_RANGE_NOTES` (nốt ngoài 88 phím bị bỏ), `ZERO_LENGTH_NOTES` (nốt dài 0 giây được kéo thành 50 ms), `TEMPO_CHANGES` (bài đổi tempo, bản nhạc có thể lệch ô nhịp), `NO_PIANO_TRACK` (không có track piano, đang gợi ý nhạc cụ khác).
+
+**Lỗi:** `401 UNAUTHORIZED`, `400 FILE_REQUIRED` / `UNEXPECTED_FILE` / `INVALID_UPLOAD`, `413 FILE_TOO_LARGE`, `415 UNSUPPORTED_FILE`, `422 INVALID_MIDI` / `INVALID_TRACKS` / `NO_NOTES` / `MIDI_TOO_LARGE`.
+
+### POST `/sheets`
+
+**Xác thực:** bắt buộc. Người gửi là người upload (`uploaderId`).
+
+**Form:**
+
+| Trường | Bắt buộc | Mô tả |
+| --- | --- | --- |
+| `file` | Có | File MIDI (như ở analyze) |
+| `title` | Có | 1-100 ký tự (khoảng trắng thừa được gộp) |
+| `composer` | Không | Tối đa 100 ký tự. Trống thì là `Unknown` |
+| `difficulty` | Có | `EASY` / `MEDIUM` / `HARD` / `EXPERT` |
+| `tags` | Không | Tối đa 3 tag, mỗi tag 1-30 ký tự, gửi nhiều trường `tags`. Trùng (không phân biệt hoa thường) thì bỏ; trùng tag đã có trong Library thì dùng cách viết đã có (`pop` thành `Pop`) |
+| `coverColor` | Không | `yellow` / `pink` / `mint` / `lavender`. Không gửi thì chọn ngẫu nhiên |
+| `visibility` | Không | `PUBLIC` / `PRIVATE`, mặc định `PRIVATE` |
+| `tracks` | Không | Track đã chọn (như ở analyze). Không gửi thì dùng track gợi ý |
+
+Bài và file gốc được lưu cùng lúc (lỗi thì không lưu gì). `id` tạo từ `title`: bỏ dấu tiếng Việt, ký tự khác chữ / số thành `-`, không còn chữ / số nào thì là `untitled`; trùng thì thêm `-2`, `-3` (`fur-elise-2`). Riêng `tags` đổi thành `tags-2` vì trùng đường dẫn `/sheets/tags`.
+
+**Thành công: `201`**, đối tượng Sheet (như ở danh sách) kèm `visibility`, `uploaderId`:
+
+```json
+{
+  "id": "fur-elise-2",
+  "title": "Für Elise",
+  "subtitle": null,
+  "composer": "Ludwig van Beethoven",
+  "difficulty": "EASY",
+  "tags": ["Classical"],
+  "bpm": 120,
+  "timeSignature": [3, 4],
+  "keySignature": "C major",
+  "durationSec": 33,
+  "noteCount": 104,
+  "views": 0,
+  "likes": 0,
+  "coverColor": "mint",
+  "createdAt": "2026-11-06T13:00:00.000Z",
+  "visibility": "PUBLIC",
+  "uploaderId": 3,
+  "likedByMe": false
+}
+```
+
+**Lỗi:** như analyze, thêm `422 VALIDATION_FAILED` (vd `{ "code": "VALIDATION_FAILED", "message": "Give your sheet a title.", "details": { "field": "title" } }`; `message` hiện thẳng lên giao diện) và `409 SHEET_ID_TAKEN`.
+
+### PATCH `/sheets/:id`
+
+**Xác thực:** bắt buộc, chỉ người upload. Bài của người khác, bài mẫu hoặc bài không tồn tại đều trả `404 SHEET_NOT_FOUND`.
+
+**Body (JSON):** chỉ gửi trường muốn đổi, cùng luật với lúc tạo bài: `title`, `composer` (rỗng thành `Unknown`), `difficulty`, `tags` (mảng, tối đa 3), `coverColor`, `visibility`. Không đổi được nốt, file hay `id` (đổi tên bài thì `id` giữ nguyên, link cũ vẫn mở được). Gửi trường khác thì `422 VALIDATION_FAILED` với `details.field` là trường đó.
+
+```json
+{ "title": "Golden Hour (Piano)", "visibility": "PUBLIC" }
+```
+
+**Thành công: `200`**, đối tượng Sheet sau khi sửa.
+
+**Lỗi:** `400 INVALID_JSON`, `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`, `422 VALIDATION_FAILED`.
+
+### DELETE `/sheets/:id`
+
+**Xác thực:** bắt buộc, chỉ người upload (như `PATCH`). Xoá bài, file MIDI gốc và các lượt thích của bài.
+
+**Thành công: `204`**, không có nội dung.
+
+**Lỗi:** `401 UNAUTHORIZED`, `404 SHEET_NOT_FOUND`.
+
+### GET `/users/me/sheets`
+
+**Xác thực:** bắt buộc. Mọi bài người đang đăng nhập đã upload, cả `PUBLIC` và `PRIVATE`.
+
+**Query:** giống `GET /sheets` (`q`, `difficulty`, `tag`, `sort`, `page`, `pageSize`), nhưng `sort` mặc định là `newest`.
+
+**Thành công: `200`**, dạng giống `GET /sheets`: `{ "data": [Sheet...], "meta": { "page", "pageSize", "total", "totalPages" } }`.
+
+**Lỗi:** `401 UNAUTHORIZED`, `422 VALIDATION_FAILED`.
+
+### GET `/users/:id/sheets`
+
+**Xác thực:** tùy chọn (chỉ ảnh hưởng `likedByMe`, `isMine`). Các bài `PUBLIC` mà người dùng `:id` đã upload, kể cả khi người xem là chính người đó (bài `PRIVATE` của mình xem ở `/users/me/sheets`). Dùng cho trang profile.
+
+**Query và response:** như `/users/me/sheets`.
+
+**Lỗi:** `404 USER_NOT_FOUND` (người dùng không tồn tại, hoặc `:id` không phải số nguyên dương), `422 VALIDATION_FAILED`.

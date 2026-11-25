@@ -19,3 +19,17 @@ test("từ chối tham số sai", () => {
   assert.throws(() => parseListQuery({ difficulty: "bad" }), isValidationError);
   assert.throws(() => parseListQuery({ page: "0" }), isValidationError);
 });
+
+test("parsePracticeBody chi nhan tu 5 not tro len", () => {
+  const { parsePracticeBody } = require("./sheets.schema");
+  assert.deepStrictEqual(parsePracticeBody({ noteCount: 5, durationSec: 0, role: "x" }), { noteCount: 5, durationSec: 0 });
+  for (const body of [
+    {},
+    { noteCount: 4, durationSec: 10 },
+    { noteCount: 5.5, durationSec: 10 },
+    { noteCount: 5, durationSec: -1 },
+    { noteCount: 5, durationSec: 86401 },
+  ]) {
+    assert.throws(() => parsePracticeBody(body), (error) => error.code === "VALIDATION_FAILED");
+  }
+});

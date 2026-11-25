@@ -3,6 +3,8 @@ const cors = require("cors");
 const workspaceRoutes = require("./features/workspace/workspace.routes");
 const sheetsRoutes = require("./features/sheets/sheets.routes");
 const authRoutes = require("./features/auth/auth.routes");
+const uploadsRoutes = require("./features/uploads/uploads.routes");
+const usersRoutes = require("./features/users/users.routes");
 const {
   notFoundHandler,
   errorHandler,
@@ -22,6 +24,8 @@ app.get("/", (req, res) => {
 app.use("/api/v1", workspaceRoutes);
 app.use("/api/v1", sheetsRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1", uploadsRoutes);
+app.use("/api/v1/users", usersRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

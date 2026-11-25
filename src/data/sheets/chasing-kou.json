@@ -6223,7 +6223,7 @@
       "midi": 49,
       "name": "C#3",
       "time": 88.7051,
-      "duration": 0,
+      "duration": 0.05,
       "velocity": 0.5984,
       "hand": "left"
     },

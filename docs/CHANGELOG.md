@@ -5,6 +5,44 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-20 – Xác thực email, quên mật khẩu, rate limit và lint
+
+- **API mới** (chi tiết `docs/api.md` › Auth): `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/verify-email`, `POST /auth/verify-email/resend` (cần đăng nhập). Đăng ký thành công thì tự gửi email xác thực.
+- **Quên mật khẩu** chỉ gửi cho tài khoản đã xác thực email, chưa xác thực trả `403 EMAIL_NOT_VERIFIED` (`README_main.md` mục 3.5). Link đặt lại hạn 30 phút, link xác thực hạn 24 giờ, mỗi link dùng một lần.
+- **Database:** migration `add_auth_tokens` (bảng `auth_tokens`, enum `AuthTokenType`). Chỉ lưu mã băm SHA-256 của token. Chỉ thêm bảng, dữ liệu cũ giữ nguyên.
+- **Gửi email:** `src/lib/mailer.js` (Nodemailer). Biến môi trường mới: `APP_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (xem `.env.example`). Để trống `SMTP_HOST` thì email được in ra console. `NODE_ENV=production` mà thiếu `SMTP_HOST` thì server không khởi động.
+- **Rate limit** (`express-rate-limit`): mọi route `/auth/*` tối đa 20 request / 15 phút / IP, vượt thì `429 TOO_MANY_REQUESTS`.
+- **Lint:** thêm ESLint 9 (`eslint.config.js`, lệnh `npm run lint`). Sửa 1 biến thừa trong `scripts/uploads-smoke.mjs`.
+- **Dọn dẹp:** xoá các thư mục trống `src/common/utils`, `src/features/auth/strategies`, `src/features/collections`, `src/features/sheets/helpers`, `src/types`.
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy` (đã gồm `prisma generate`), thêm các biến mới vào `.env` theo `.env.example`, rồi khởi động lại server.
+
+## 2026-11-07 – Ảnh hồ sơ, lịch sử chơi và dọn sau merge
+
+- **Ảnh hồ sơ:** thêm API tải, xoá và lấy ảnh `avatar` / `background`. Nhận file bằng `multer`, `sharp` kiểm tra và đổi sang WebP, tạm lưu trong PostgreSQL (bảng `user_images`, migration `add_user_images`). User trả thêm `avatarUrl`, `backgroundUrl`.
+- **Lịch sử chơi:** `GET /sheets/practice-history` trả thêm `composer`, `coverColor`.
+- **Migration lệch thứ tự:** sau khi gộp `upload-midi` và `profile`, máy đã chạy migration của `profile` có thể thiếu `add_sheet_uploads`, làm API sheet trả 500 (`P2022`, thiếu cột `sheets.visibility`). Chạy `npm run db:deploy`, **không** đồng ý nếu Prisma đòi reset.
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`, rồi khởi động lại server.
+
+## 2026-11-06 – Upload MIDI (Bình)
+
+Người dùng tải file MIDI lên thành bài nhạc chơi được ở Workspace. Phần Backend đã xong, trừ lưu file trên Cloud (làm khi deploy).
+
+- **Database:** migration `add_sheet_uploads` (`sheets` thêm `uploader_id`, `visibility`; bảng mới `sheet_files` chứa file MIDI gốc). Chỉ thêm cột / bảng, dữ liệu cũ giữ nguyên.
+- **Thư viện, biến môi trường:** thêm `multer`; `FILE_STORAGE` (mặc định `postgres`, không khai báo cũng được).
+- **API mới** (chi tiết `docs/api.md` › Uploads): `POST /uploads/midi/analyze`, `POST /sheets`, `PATCH /sheets/:id`, `DELETE /sheets/:id`, `GET /users/me/sheets`, `GET /users/:id/sheets` (cho trang profile).
+- **Đổi hành vi API cũ:** bài `PRIVATE` chỉ người upload xem được: không có trong `GET /sheets`, `/sheets/tags`; người khác mở thì `404`. Sheet trả thêm `visibility`, `uploaderId`, `uploader`, `isMine`. `/sheets/:id/score` và `/view` nhận token (không bắt buộc).
+- **Engine MIDI** dời sang `src/features/uploads/midiToSheet.js` (dùng chung cho seed và upload), xoá `src/data/sheets/convertMidi.mjs`. Bài mẫu `chasing-kou` sửa 1 nốt dài 0 giây.
+- **Seed** không ghi đè bài người dùng upload nếu trùng id.
+- **Kiểm thử:** `npm test` (không cần DB) và `npm run uploads:smoke` (chạy với DB thật, tự dọn dữ liệu).
+
+**Cần làm sau khi pull:** `npm install`, `npm run db:deploy`, `npm run db:seed`.
+
+## 2026-11-06 – API người dùng (Quỳnh)
+
+- Thêm `GET /api/v1/users/me`, trả thông tin tài khoản đang đăng nhập. Không cần migration.
+
 ## 2026-11-05 – Hoá biểu, dấu nối và test
 
 - `/sheets/:id/score` trả thêm `keySignature` và `tieToNext`. `accidental` có thể là `#`, `b`, `n` hoặc `null`.

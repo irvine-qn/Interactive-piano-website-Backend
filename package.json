@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test",
+    "lint": "eslint .",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -15,7 +16,8 @@
     "postdb:deploy": "prisma generate",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "sheets:build": "node scripts/build-sheets.mjs"
+    "sheets:build": "node scripts/build-sheets.mjs",
+    "uploads:smoke": "node scripts/uploads-smoke.mjs"
   },
   "repository": {
     "type": "git",
@@ -37,10 +39,18 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.4",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.4",
+    "file-type": "^22.3.0",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.23.1"
+    "multer": "^2.5.0",
+    "nodemailer": "^10.6.0",
+    "pg": "^8.23.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
     "prisma": "^7.10.1"
   }
 }

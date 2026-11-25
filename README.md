@@ -45,6 +45,15 @@ piano-backend/
 │   │   │   └── auth.service.js
 │   │   ├── users/
 │   │   │   └── users.repository.js
+│   │   ├── uploads/
+│   │   │   ├── midiToSheet.js
+│   │   │   ├── sheetId.js
+│   │   │   ├── sheetSuggestions.js
+│   │   │   ├── uploads.controller.js
+│   │   │   ├── uploads.repository.js
+│   │   │   ├── uploads.routes.js
+│   │   │   ├── uploads.schema.js
+│   │   │   └── uploads.service.js
 │   │   ├── collections/
 │   │   ├── workspace/
 │   │   │   ├── workspace.controller.js
@@ -61,7 +70,8 @@ piano-backend/
 │   │   └── sheets/
 │   │
 │   ├── lib/
-│   │   └── prisma.js
+│   │   ├── prisma.js
+│   │   └── fileStorage.js
 │   ├── types/
 │   ├── app.js
 │   └── server.js
@@ -72,9 +82,10 @@ piano-backend/
 │   └── migrations/
 │
 ├── scripts/
-│   ├── midi-to-sheet.mjs       # MIDI -> sheet JSON (seed data)
+│   ├── midi-to-sheet.mjs       # MIDI -> sheet JSON (seed data), uses src/features/uploads/midiToSheet.js
 │   ├── build-sheets.mjs        # npm run sheets:build
-│   └── auth-regression.mjs     # Auth API regression test (record/compare)
+│   ├── auth-regression.mjs     # Auth API regression test (record/compare)
+│   └── uploads-smoke.mjs       # npm run uploads:smoke (upload feature on the real database)
 │
 ├── docs/
 │   ├── NOTES.md                # Technical notes for the team
@@ -106,9 +117,11 @@ piano-backend/
 | `src/features/sheets/`       | Sheet data for the Library and Workspace pages (`/api/v1/sheets`)  |
 | `src/features/auth/`         | Register / login, password hashing, JWT (`/api/v1/auth`)           |
 | `src/features/users/`        | `users` table access through Prisma (`users.repository.js`)        |
+| `src/features/uploads/`      | MIDI to sheet engine (`midiToSheet.js`), shared by the seed tool and the upload feature |
 | `src/data/sheets/`           | Sample sheet source data (MIDI, catalog, note JSON) loaded by `npm run db:seed` |
 | `src/lib/`                   | Third-party integrations (storage, mailer, cache)                  |
 | `src/lib/prisma.js`          | Shared Prisma client (connects through the `pg` driver adapter)    |
+| `src/lib/fileStorage.js`     | Saves original MIDI files of uploaded sheets (`FILE_STORAGE`, now PostgreSQL table `sheet_files`) |
 | `prisma/schema.prisma`       | Database models                                                    |
 | `prisma/migrations/`         | Migration history (one migration per schema change)                |
 | `prisma.config.js`           | Prisma CLI config (schema path, migrations path, `DATABASE_URL`)   |
@@ -198,9 +211,22 @@ DATABASE_URL=postgresql://fiano:fiano@localhost:5432/fiano?schema=public
 
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRES_IN=7d
+
+FILE_STORAGE=postgres
+
+APP_URL=http://localhost:5173
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=Fiano <no-reply@fiano.local>
 ```
 
 > Do not commit `.env` to GitHub because it may contain sensitive information. Set `JWT_SECRET` to your own long random string (it signs login tokens).
+
+`FILE_STORAGE` chooses where original MIDI files of uploaded sheets are stored (`src/lib/fileStorage.js`). Only `postgres` (table `sheet_files`) exists for now; a cloud option will be added for deployment.
+
+`APP_URL` is the Frontend address used in email links. `SMTP_*` and `MAIL_FROM` configure Nodemailer. Leave `SMTP_HOST` empty locally and the email (with its link) is printed to the server console instead of being sent. With `NODE_ENV=production` the server refuses to start without `SMTP_HOST`. For Gmail use `smtp.gmail.com`, port `587` and an **App Password** (needs 2-Step Verification), not your normal password.
 
 If port `5432` is already used by another PostgreSQL on your machine, change `POSTGRES_PORT` and the port inside `DATABASE_URL` to the same free port (for example `5433`).
 
@@ -253,7 +279,7 @@ npm run db:seed
 1. Put the `.mid` file in `src/data/sheets/midi/`.
 2. Check its tracks: `node scripts/midi-to-sheet.mjs src/data/sheets/midi/<file>.mid --inspect`.
 3. Add an entry to `src/data/sheets/catalog.json` (with the piano `tracks` to use).
-4. Run `npm run sheets:build`, then `npm run db:seed`.
+4. Run `npm run sheets:build`, then `npm run db:seed`. The seed skips (with a warning) an id that already belongs to a sheet uploaded by a user: pick another id.
 
 Use the shared client in code:
 
@@ -277,6 +303,8 @@ The `users` table used to be created by the server at startup (raw SQL). It is n
 
 Check with `npx prisma migrate status` → `Database schema is up to date!`. After that, `npm run db:migrate` works normally again.
 
+If `migrate status` lists a pending migration older than one already applied (this can happen after merging branches), run `npm run db:deploy`.
+
 ---
 
 # 7. Run the Backend
@@ -284,8 +312,10 @@ Check with `npx prisma migrate status` → `Database schema is up to date!`. Aft
 Make sure PostgreSQL is running and the database is migrated and seeded (sections 6.1 and 6.2). Then start the development server:
 
 ```bash
-npm start
+npm run dev
 ```
+
+`npm run dev` restarts the server automatically when the code changes. `npm start` does not, so after pulling or editing code you must stop it (`Ctrl+C`) and start it again.
 
 The server should run at:
 
@@ -315,6 +345,13 @@ Expected response:
 {
   "message": "Piano Backend is running!"
 }
+```
+
+Automated tests:
+
+```bash
+npm test               # unit and HTTP tests, no database needed
+npm run uploads:smoke  # upload feature against the real database (creates and removes temporary users and sheets)
 ```
 
 ---
@@ -394,6 +431,8 @@ Returns the note range, keyboard mapping, note frequencies, and metronome BPM li
 Notes without a computer-keyboard mapping have `"keyboardKey": null`. The existing `/api/v1/frequencies` response remains unchanged.
 
 ## Sheets (Sheet Library & Workspace pages)
+
+Only `PUBLIC` sheets are listed and counted in tags. A `PRIVATE` sheet (uploaded by a user) can only be opened by its uploader: everyone else gets `404 SHEET_NOT_FOUND`. Send the token on `GET /sheets/:id`, `/score` and `POST /view` so the uploader can open it.
 
 Feature: `src/features/sheets/` (routes → controller → service → repository). Sheet data is read from the PostgreSQL table `sheets` through Prisma (`sheets.repository.js`). Run `npm run db:seed` first to load the sample sheets.
 
@@ -559,6 +598,19 @@ Errors: `409 USERNAME_TAKEN`, `409 EMAIL_TAKEN`, `422 VALIDATION_FAILED` (messag
 
 `identifier` is the username **or** the email (case-insensitive). Response `200` has the same shape as register. Wrong username/email or password: `401 INVALID_CREDENTIALS` (same message for both, so the API does not reveal which accounts exist).
 
+### Email verification and password reset
+
+All `/auth/*` routes are rate limited to 20 requests per 15 minutes per IP (`429 TOO_MANY_REQUESTS`). Tokens are random, single use and stored only as a SHA-256 hash (table `auth_tokens`). Email links point to the Frontend pages `/verify-email` and `/reset-password`.
+
+| Method | Path | Auth | Body | Notes |
+| --- | --- | --- | --- | --- |
+| POST | `/api/v1/auth/forgot-password` | No | `{ email }` | Only for verified accounts (`403 EMAIL_NOT_VERIFIED` otherwise). Unknown email still returns `200`. Link valid 30 minutes |
+| POST | `/api/v1/auth/reset-password` | No | `{ token, password }` | Same password rules as register. `400 INVALID_TOKEN` if used or expired |
+| POST | `/api/v1/auth/verify-email` | No | `{ token }` | Sets `isVerified`. Link valid 24 hours |
+| POST | `/api/v1/auth/verify-email/resend` | Yes | none | `409 ALREADY_VERIFIED` if already verified |
+
+Register sends the verification email automatically. Full details: [`docs/api.md`](docs/api.md).
+
 ### Regression test
 
 After changing Auth code, compare responses with a baseline taken before the change (creates a few test accounts in the current database, dev only):
@@ -570,6 +622,36 @@ node scripts/auth-regression.mjs --compare baseline.json   # after the change
 
 Options: `--base http://localhost:5000`, `--existing <username>:<password>` (also check an account that already exists).
 
+## Profile images
+
+| Method | Route | Auth | Description |
+| --- | --- | --- | --- |
+| PUT | `/api/v1/users/profile/images/:kind` | Required | Upload `avatar` or `background` (multipart field `file`, up to 5 MB) |
+| DELETE | `/api/v1/users/profile/images/:kind` | Required | Remove the image |
+| GET | `/api/v1/users/:id/images/:kind` | None | Read the image (`image/webp`) |
+
+Images are stored in PostgreSQL for now (`user_images`). Details: [`docs/api.md`](docs/api.md).
+
+## Uploads
+
+Feature: `src/features/uploads/` (routes → controller → schema → service). The MIDI engine is `midiToSheet.js`, file upload is handled by `src/common/middlewares/upload.middleware.js` (multer). Full request/response details: [`docs/api.md`](docs/api.md#uploads).
+
+### POST `/api/v1/uploads/midi/analyze`
+
+Requires a token. Send `multipart/form-data` with `file` (a `.mid`/`.midi` file, at most 1 MB) and optionally `tracks` (for example `0,1`). Reads the file and returns the tracks with a suggested selection, a suggested title (from the file name), a suggested difficulty, BPM, time and key signature, duration, note count and warnings. **Nothing is saved**: call it again with `tracks` when the user changes the selection.
+
+### POST `/api/v1/sheets`
+
+Requires a token. Creates a sheet from a MIDI file: send `file` again with `title`, `difficulty` and optionally `composer`, `tags` (up to 3), `coverColor`, `visibility` (`PRIVATE` by default) and `tracks`. The sheet and the original file are saved in one transaction, the id is built from the title (`fur-elise`, `fur-elise-2`...). Returns `201` with the sheet summary. Invalid fields return `422 VALIDATION_FAILED` with `details.field`.
+
+### PATCH / DELETE `/api/v1/sheets/:id`
+
+Requires a token, only for the uploader (anyone else, and sample sheets, get `404 SHEET_NOT_FOUND`). `PATCH` takes JSON with any of `title`, `composer`, `difficulty`, `tags`, `coverColor`, `visibility` and returns the updated sheet; notes, file and id never change. `DELETE` removes the sheet, its original file and its likes, and returns `204`.
+
+### GET `/api/v1/users/me/sheets` and `/api/v1/users/:id/sheets`
+
+Sheets uploaded by a user, newest first, same query and `{ data, meta }` shape as `GET /api/v1/sheets`. `/users/me/sheets` requires a token and returns all my sheets (`PUBLIC` and `PRIVATE`). `/users/:id/sheets` returns only `PUBLIC` sheets of that user (`404 USER_NOT_FOUND` if the user does not exist).
+
 ### Errors
 
 All errors use `{ "error": { "code", "message", "details?" } }`:
@@ -577,11 +659,18 @@ All errors use `{ "error": { "code", "message", "details?" } }`:
 | Status | Code | When |
 | --- | --- | --- |
 | 400 | `INVALID_JSON` | Request body is not valid JSON |
+| 400 | `FILE_REQUIRED` / `UNEXPECTED_FILE` / `INVALID_UPLOAD` | Upload without a file, with several files or a wrong field name, or a broken multipart request |
+| 401 | `UNAUTHORIZED` | Missing or invalid token on a protected route |
 | 401 | `INVALID_CREDENTIALS` | Login with a wrong username/email or password |
 | 404 | `SHEET_NOT_FOUND` | Sheet id does not exist |
+| 404 | `USER_NOT_FOUND` | User id does not exist (`/users/:id/sheets`) |
 | 404 | `NOT_FOUND` | Route does not exist (also wrong HTTP method) |
 | 409 | `USERNAME_TAKEN` / `EMAIL_TAKEN` | Register with an existing username / email |
+| 409 | `SHEET_ID_TAKEN` | Could not pick a free id for a new sheet (many uploads with the same title at once), retry |
+| 413 | `FILE_TOO_LARGE` | Uploaded file is larger than 1 MB |
+| 415 | `UNSUPPORTED_FILE` | Uploaded file is not a MIDI file |
 | 422 | `VALIDATION_FAILED` | Invalid query parameter or request body |
+| 422 | `INVALID_MIDI` / `INVALID_TRACKS` / `NO_NOTES` / `MIDI_TOO_LARGE` | Damaged MIDI file, wrong track selection, no playable notes, more than 20 000 notes or 20 minutes |
 | 500 | `INTERNAL_ERROR` | Unexpected server error (e.g. database is down) |
 
 ---
@@ -662,7 +751,8 @@ README.md
 * [x] Register API
 * [x] Login API
 * [x] JWT authentication (token issued on register/login)
-* [ ] Music sheet upload
+* [x] Music sheet upload (MIDI): analyze, create, private / public, my uploads, edit, delete
+* [ ] Store uploaded files on a cloud service (at deploy time)
 * [ ] User's saved music sheets
 
 ### Frontend
@@ -705,6 +795,12 @@ Example endpoints:
 ```text
 POST   /api/v1/auth/register
 POST   /api/v1/auth/login
+POST   /api/v1/auth/forgot-password
+POST   /api/v1/auth/reset-password
+POST   /api/v1/auth/verify-email
+POST   /api/v1/auth/verify-email/resend
+
+GET    /api/v1/users/me
 
 GET    /api/v1/sheets
 POST   /api/v1/sheets
@@ -732,6 +828,32 @@ Technical notes (big changes such as Auth moving from raw `pg` to Prisma, conven
 
 # 15. Useful Commands
 
+Run locally for the first time (Docker Desktop must be running):
+
+```bash
+npm install
+cp .env.example .env
+docker compose up -d
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
+
+Run locally on later days:
+
+```bash
+docker compose up -d
+npm run dev
+```
+
+After pulling new code:
+
+```bash
+npm install
+npm run db:deploy
+npm run dev
+```
+
 Install dependencies:
 
 ```bash
@@ -741,7 +863,8 @@ npm install
 Start server:
 
 ```bash
-npm start
+npm run dev                 # restarts automatically when code changes
+npm start                   # no automatic restart
 ```
 
 Database and data:
@@ -753,4 +876,11 @@ npm run db:deploy           # apply migrations without drift checks (existing DB
 npm run db:seed             # load sample sheets
 npm run db:studio           # browse data in the browser
 npm run sheets:build        # regenerate sheet JSON from MIDI (src/data/sheets/catalog.json)
+```
+
+Tests:
+
+```bash
+npm test                    # unit and HTTP tests (no database)
+npm run uploads:smoke       # upload feature against the real database
 ```
