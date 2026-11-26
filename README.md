@@ -215,6 +215,11 @@ JWT_EXPIRES_IN=7d
 FILE_STORAGE=postgres
 
 APP_URL=http://localhost:5173
+
+CORS_ORIGIN=
+TRUST_PROXY=0
+
+RESEND_API_KEY=
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
@@ -226,7 +231,19 @@ MAIL_FROM=Fiano <no-reply@fiano.local>
 
 `FILE_STORAGE` chooses where original MIDI files of uploaded sheets are stored (`src/lib/fileStorage.js`). Only `postgres` (table `sheet_files`) exists for now; a cloud option will be added for deployment.
 
-`APP_URL` is the Frontend address used in email links. `SMTP_*` and `MAIL_FROM` configure Nodemailer. Leave `SMTP_HOST` empty locally and the email (with its link) is printed to the server console instead of being sent. With `NODE_ENV=production` the server refuses to start without `SMTP_HOST`. For Gmail use `smtp.gmail.com`, port `587` and an **App Password** (needs 2-Step Verification), not your normal password.
+`APP_URL` is the Frontend address used in email links.
+
+Email is sent through `src/lib/mailer.js`, which picks the first option that is configured:
+
+1. `RESEND_API_KEY`: the [Resend](https://resend.com) HTTP API. Used in production because Railway's Hobby plan blocks SMTP. `MAIL_FROM` must use a domain verified on Resend, for example `Fiano <no-reply@fiano.date>`.
+2. `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`): Nodemailer over SMTP. For Gmail use `smtp.gmail.com`, port `587` and an **App Password** (needs 2-Step Verification), not your normal password.
+3. Neither: the email (with its link) is printed to the server console instead of being sent. Leave both empty locally.
+
+`CORS_ORIGIN` lists the Frontend origins allowed to call the API from a browser, separated by commas (for example `https://fiano.date,https://www.fiano.date`). Leave it empty locally to allow any origin, so opening the Frontend by LAN IP on a phone still works.
+
+`TRUST_PROXY` is the number of proxies in front of the server. Keep `0` locally. Behind Railway set `1`, otherwise the auth rate limit sees every user as the proxy's IP and blocks everyone together.
+
+With `NODE_ENV=production` the server refuses to start when `CORS_ORIGIN` is empty or when neither `RESEND_API_KEY` nor `SMTP_HOST` is set.
 
 If port `5432` is already used by another PostgreSQL on your machine, change `POSTGRES_PORT` and the port inside `DATABASE_URL` to the same free port (for example `5433`).
 
