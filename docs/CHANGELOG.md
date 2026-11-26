@@ -5,6 +5,15 @@ Mục **Cần làm sau khi pull** là các lệnh phải chạy trên máy của
 
 ---
 
+## 2026-11-26 – Chuẩn bị deploy (Railway + Neon)
+
+- **Gửi email qua Resend:** `src/lib/mailer.js` có thêm cách gửi qua HTTP API của Resend (`RESEND_API_KEY`), ưu tiên hơn SMTP. Railway gói Hobby chặn cổng SMTP nên production dùng Resend. Cách gửi SMTP cũ và in ra console khi chạy local giữ nguyên.
+- **CORS theo domain:** `CORS_ORIGIN` (danh sách cách nhau dấu phẩy). Bỏ trống thì cho mọi domain như trước.
+- **Rate limit sau proxy:** `TRUST_PROXY` (số proxy đứng trước server). Bỏ trống hoặc `0` thì như trước.
+- **Production** (`NODE_ENV=production`) không khởi động khi thiếu `CORS_ORIGIN`, hoặc thiếu cả `RESEND_API_KEY` lẫn `SMTP_HOST`.
+
+**Cần làm sau khi pull:** không bắt buộc. Có thể thêm `CORS_ORIGIN=`, `TRUST_PROXY=0`, `RESEND_API_KEY=` vào `.env` theo `.env.example` (bỏ trống thì chạy như cũ).
+
 ## 2026-11-20 – Xác thực email, quên mật khẩu, rate limit và lint
 
 - **API mới** (chi tiết `docs/api.md` › Auth): `POST /auth/forgot-password`, `POST /auth/reset-password`, `POST /auth/verify-email`, `POST /auth/verify-email/resend` (cần đăng nhập). Đăng ký thành công thì tự gửi email xác thực.

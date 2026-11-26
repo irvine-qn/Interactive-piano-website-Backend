@@ -65,7 +65,7 @@ Trước đây sheet là file JSON đọc trực tiếp. Bây giờ bảng `shee
 - Khoá chính `users.id` là số tự tăng (`SERIAL`), còn `sheets.id` là slug chữ (`fur-elise`).
 - File MIDI gốc của bài upload (`sheet_files`) **chỉ đọc/ghi qua `src/lib/fileStorage.js`**, không gọi `prisma.sheetFile` trực tiếp: khi deploy sẽ chuyển sang Cloud.
 - Token xác thực email và đặt lại mật khẩu **chỉ lưu mã băm** (`auth_tokens.token_hash`). Đánh dấu đã dùng và cập nhật user nằm trong **cùng một transaction** (`useToken` ở `auth.repository.js`): đừng tách ra, hai request cùng token có thể cùng thành công.
-- Gửi email **chỉ qua `src/lib/mailer.js`**. Chưa có `SMTP_HOST` thì email in ra console, nên đừng để log server lộ ra ngoài khi chạy thử với dữ liệu thật.
+- Gửi email **chỉ qua `src/lib/mailer.js`**. Chưa có `RESEND_API_KEY` lẫn `SMTP_HOST` thì email (kèm link đặt lại mật khẩu) in ra console, nên đừng để log server lộ ra ngoài khi chạy thử với dữ liệu thật.
 - Truy vấn bài theo người xem **luôn dùng `visibleTo(userId)`** (`sheets.repository.js`). Đừng tự viết `{ uploaderId: userId }`: khách có `userId` là `undefined` và Prisma coi `undefined` là *không lọc*, lộ mọi bài `PRIVATE`. API mới đọc bài theo id thì gắn `optionalAuth` để người upload mở được bài `PRIVATE` của mình.
 
 ## 3. Dữ liệu bài nhạc (`sheets.notes`) – FE phụ thuộc vào định dạng này
@@ -94,11 +94,19 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 | Không khởi động được Postgres, lỗi port 5432 | Máy đã có Postgres khác | Đổi `POSTGRES_PORT` và port trong `DATABASE_URL` cho giống nhau |
 | Code báo thiếu field/model Prisma sau khi pull | Chưa generate lại client | `npm run db:generate` (hoặc `npm install`) |
 | `Cannot read properties of undefined (reading 'deleteMany')` ở `auth.repository.js` | Đã chạy migration nhưng chưa generate lại Prisma client | `npm run db:generate` rồi khởi động lại server |
-| Không nhận được email xác thực / đặt lại mật khẩu | Chưa đặt `SMTP_HOST`, email đang in ra console | Xem terminal chạy server, hoặc điền `SMTP_*` trong `.env` |
+| Không nhận được email xác thực / đặt lại mật khẩu | Chưa đặt `RESEND_API_KEY` hay `SMTP_HOST`, email đang in ra console | Xem terminal chạy server, hoặc điền `RESEND_API_KEY` / `SMTP_*` trong `.env` |
 | API Auth trả `429 TOO_MANY_REQUESTS` khi đang thử | Vượt 20 request / 15 phút | Chờ 15 phút hoặc khởi động lại server (bộ đếm nằm trong RAM) |
 | Đăng ký/đăng nhập trả `500`, log server có `secretOrPrivateKey must have a value` | Thiếu `JWT_SECRET` trong `.env` (không có giá trị mặc định) | Copy từ `.env.example` và đặt chuỗi ngẫu nhiên |
 
-## 5. Kiểm tra trước khi tạo PR
+## 5. Production (Railway + Neon)
+
+- **Merge vào `main` là deploy.** Railway build lại và chạy `npm run db:deploy` (pre-deploy) trên **DB thật ở Neon**. Migration mới phải chạy thử ở local trước; migration lỗi thì bản mới không được deploy.
+- **Không chạy `db:migrate`, `migrate reset` hay script thử (`uploads:smoke`, `auth-regression`) với `DATABASE_URL` của Neon.** Cần thao tác trên Neon thì đặt biến tạm trong một cửa sổ terminal, làm xong xoá ngay; đừng sửa `.env`.
+- **Biến môi trường production chỉ đặt trên dashboard Railway**, không commit. Railway (Railpack) **tự đặt `NODE_ENV=production`**, nên production bắt buộc có `CORS_ORIGIN` và `RESEND_API_KEY` (hoặc `SMTP_HOST`), nếu không server dừng ngay lúc khởi động. Cần `TRUST_PROXY=1` để rate limit tính theo từng người dùng.
+- `DATABASE_URL` trên Railway dùng kết nối **direct** của Neon (host không có `-pooler`): `prisma migrate` cần kết nối direct, và app chỉ chạy 1 instance.
+- **Neon Free tính theo giờ DB chạy** (100 CU-giờ/tháng, DB tự ngủ sau 5 phút). Đừng cài cron ping giữ DB thức: hết quota thì DB bị ngưng tới tháng sau.
+
+## 6. Kiểm tra trước khi tạo PR
 
 1. `npx prisma migrate status` → `Database schema is up to date!`
 2. `npm start`, mở `http://localhost:5000` → `{ "message": "Piano Backend is running!" }`
@@ -107,10 +115,10 @@ Mỗi nốt: `{ midi, name, time, duration, velocity, hand }`.
 5. Có sửa Auth: chạy `scripts/auth-regression.mjs --compare` với baseline chụp trước khi sửa.
 6. Có thêm/đổi API: cập nhật README mục *Available API* và `docs/api.md`.
 
-## 6. Việc còn mở
+## 7. Việc còn mở
 
 - **Upload MIDI**: Backend xong. Còn lưu file trên Cloud khi deploy (U-BE-12: thêm driver cho `fileStorage.js`, dùng chung dịch vụ với ảnh hồ sơ, cần thống nhất dịch vụ).
 - **Ảnh hồ sơ:** đang tạm lưu trong PostgreSQL (`user_images`), client chỉ dùng URL. Khi deploy chuyển sang Cloud.
 - **Bài đã lưu của người dùng**: chưa phân công.
 - **Auth còn thiếu:** `POST /auth/google` (cần Google Client ID); thu hồi token đăng nhập sau khi đổi mật khẩu (AU-06); rate limit cho upload, `view`, `practice-sessions` (AU-03).
-- **Kết quả đánh giá code (2026-11-07):** AU-01 → AU-17 trong `TASK_DECOMPOSITION.md` (repo FrontEnd). **Chưa nên deploy công khai** khi chưa có hạn mức upload và giới hạn CORS (AU-04, AU-05). Rate limit mới có cho `/auth/*` (AU-03 làm một phần).
+- **Kết quả đánh giá code (2026-11-07):** AU-01 → AU-17 trong `TASK_DECOMPOSITION.md` (repo FrontEnd). Giới hạn CORS đã có (`CORS_ORIGIN`, 2026-11-26, một phần AU-05). **Còn thiếu hạn mức upload (AU-04)**: web đã chạy công khai thì nên làm sớm. Rate limit mới có cho `/auth/*` (AU-03 làm một phần).
